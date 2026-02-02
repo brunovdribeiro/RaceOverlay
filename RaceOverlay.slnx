@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/RaceOverlay.Core/RaceOverlay.Core.csproj" />
+    <Project Path="src/RaceOverlay.Engine/RaceOverlay.Engine.csproj" />
+  </Folder>
+  <Folder Name="/src/Providers/">
+    <Project Path="src/Providers/RaceOverlay.Providers.AssettoCorsa/RaceOverlay.Providers.AssettoCorsa.csproj" />
+    <Project Path="src/Providers/RaceOverlay.Providers.F124/RaceOverlay.Providers.F124.csproj" />
+    <Project Path="src/Providers/RaceOverlay.Providers.iRacing/RaceOverlay.Providers.iRacing.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RaceOverlay.Core.Tests/RaceOverlay.Core.Tests.csproj" />
+    <Project Path="tests/RaceOverlay.Engine.Tests/RaceOverlay.Engine.Tests.csproj" />
+    <Project Path="tests/RaceOverlay.Providers.Tests/RaceOverlay.Providers.Tests.csproj" />
+  </Folder>
+</Solution>
