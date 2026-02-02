@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/RaceOverlay.App/RaceOverlay.App.csproj" />
     <Project Path="src/RaceOverlay.Core/RaceOverlay.Core.csproj" />
     <Project Path="src/RaceOverlay.Engine/RaceOverlay.Engine.csproj" />
   </Folder>
