@@ -1,0 +1,20 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Colors -->
+    <Color x:Key="RO.Background">#0B0F14</Color>
+    <Color x:Key="RO.Foreground">#E7EAF0</Color>
+    <Color x:Key="RO.Muted">#9AA3B2</Color>
+    <Color x:Key="RO.Purple">#6D28D9</Color>
+    <Color x:Key="RO.Magenta">#D946EF</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="RO.BackgroundBrush" Color="{StaticResource RO.Background}" />
+    <SolidColorBrush x:Key="RO.ForegroundBrush" Color="{StaticResource RO.Foreground}" />
+    <SolidColorBrush x:Key="RO.MutedBrush" Color="{StaticResource RO.Muted}" />
+    <SolidColorBrush x:Key="RO.PurpleBrush" Color="{StaticResource RO.Purple}" />
+    <SolidColorBrush x:Key="RO.MagentaBrush" Color="{StaticResource RO.Magenta}" />
+
+    <SolidColorBrush x:Key="RO.BorderBrush" Color="#1E293B" />
+    <SolidColorBrush x:Key="RO.SurfaceBrush" Color="#161B22" />
+</ResourceDictionary>

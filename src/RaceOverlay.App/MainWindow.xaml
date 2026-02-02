@@ -8,7 +8,8 @@
         Title="RaceOverlay - Widget Manager" 
         Height="600" 
         Width="1000"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource RO.BackgroundBrush}">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="250"/>
@@ -17,17 +18,17 @@
         </Grid.ColumnDefinitions>
 
         <!-- Left Panel -->
-        <Border Grid.Column="0" Background="#F5F5F5" BorderBrush="#E0E0E0" BorderThickness="0,0,1,0">
+        <Border Grid.Column="0" Background="{StaticResource RO.SurfaceBrush}" BorderBrush="{StaticResource RO.BorderBrush}" BorderThickness="0,0,1,0">
             <DockPanel LastChildFill="True">
-                <Border DockPanel.Dock="Top" Background="#E8E8E8">
-                    <TextBlock Text="Available Widgets" FontSize="14" FontWeight="Bold" Foreground="#333333" Margin="12"/>
+                <Border DockPanel.Dock="Top" Background="{StaticResource RO.BackgroundBrush}">
+                    <TextBlock Text="Available Widgets" FontSize="14" FontWeight="Bold" Foreground="{StaticResource RO.ForegroundBrush}" Margin="12"/>
                 </Border>
-                <ListBox Name="WidgetListBox" ItemsSource="{Binding AvailableWidgets}" SelectedItem="{Binding SelectedWidget}" Background="#F5F5F5" BorderThickness="0">
+                <ListBox Name="WidgetListBox" ItemsSource="{Binding AvailableWidgets}" SelectedItem="{Binding SelectedWidget}" Background="Transparent" BorderThickness="0">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Margin="10">
-                                <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" Foreground="#333333"/>
-                                <TextBlock Text="{Binding Description}" FontSize="11" Foreground="#666666" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" Foreground="{StaticResource RO.ForegroundBrush}"/>
+                                <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{StaticResource RO.MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
                             </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
@@ -36,19 +37,19 @@
         </Border>
 
         <!-- Splitter -->
-        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#D0D0D0" ShowsPreview="True"/>
+        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="{StaticResource RO.BorderBrush}" ShowsPreview="True"/>
 
         <!-- Right Panel -->
         <DockPanel Grid.Column="2" LastChildFill="True">
-            <Border DockPanel.Dock="Top" Background="#E8E8E8">
-                <TextBlock Text="Configuration" FontSize="14" FontWeight="Bold" Foreground="#333333" Margin="12"/>
+            <Border DockPanel.Dock="Top" Background="{StaticResource RO.BackgroundBrush}">
+                <TextBlock Text="Configuration" FontSize="14" FontWeight="Bold" Foreground="{StaticResource RO.ForegroundBrush}" Margin="12"/>
             </Border>
-            <Border DockPanel.Dock="Top" Background="White" Margin="16">
-                <TextBlock Text="No widget selected" Foreground="#999999" FontStyle="Italic"/>
+            <Border DockPanel.Dock="Top" Background="Transparent" Margin="16">
+                <TextBlock Text="No widget selected" Foreground="{StaticResource RO.MutedBrush}" FontStyle="Italic"/>
             </Border>
             <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="12" Height="40">
-                <Button Command="{Binding AddWidgetCommand}" Content="Add Widget" Margin="4" Background="#4CAF50" Foreground="White" FontSize="12" Cursor="Hand" Padding="12,8"/>
-                <Button Command="{Binding RemoveWidgetCommand}" Content="Remove Widget" Margin="4" Background="#F44336" Foreground="White" FontSize="12" Cursor="Hand" Padding="12,8"/>
+                <Button Command="{Binding AddWidgetCommand}" Content="Add Widget" Margin="4" Background="{StaticResource RO.PurpleBrush}" Foreground="White" FontSize="12" Cursor="Hand" Padding="12,8"/>
+                <Button Command="{Binding RemoveWidgetCommand}" Content="Remove Widget" Margin="4" Background="{StaticResource RO.MagentaBrush}" Foreground="White" FontSize="12" Cursor="Hand" Padding="12,8"/>
             </StackPanel>
         </DockPanel>
     </Grid>
