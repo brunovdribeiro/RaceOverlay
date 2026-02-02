@@ -1,5 +1,6 @@
 using System.Windows;
 using RaceOverlay.App.ViewModels;
+using RaceOverlay.App.Services;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Engine.Views;
 using RaceOverlay.Engine.ViewModels;
@@ -12,6 +13,10 @@ namespace RaceOverlay.App;
 /// </summary>
 public partial class WidgetOverlayWindow : Window
 {
+    private bool _isDragging;
+    private Point _dragStartPoint;
+    private bool _isDraggingEnabled;
+
     public static readonly DependencyProperty WidgetProperty =
         DependencyProperty.Register(nameof(Widget), typeof(IWidget), typeof(WidgetOverlayWindow));
 
@@ -55,7 +60,7 @@ public partial class WidgetOverlayWindow : Window
     }
 
     /// <summary>
-    /// When window is loaded, populate it with the widget content.
+    /// When window is loaded, populate it with the widget content and register for drag management.
     /// </summary>
     private void WidgetOverlayWindow_Loaded(object sender, RoutedEventArgs e)
     {
@@ -68,5 +73,78 @@ public partial class WidgetOverlayWindow : Window
             view.DataContext = viewModel;
             WidgetContent.Content = view;
         }
+
+        // Register this window for drag management
+        WidgetDragService.Instance.RegisterWindow(this);
+
+        // Set initial dragging state
+        SetDraggingEnabled(WidgetDragService.Instance.IsDraggingEnabled);
+    }
+
+    /// <summary>
+    /// Enables or disables dragging for this window.
+    /// </summary>
+    public void SetDraggingEnabled(bool enabled)
+    {
+        _isDraggingEnabled = enabled;
+        
+        if (enabled)
+        {
+            // Enable drag mode - add event handlers
+            WidgetContent.MouseLeftButtonDown += WidgetContent_MouseLeftButtonDown;
+            WidgetContent.MouseMove += WidgetContent_MouseMove;
+            WidgetContent.MouseLeftButtonUp += WidgetContent_MouseLeftButtonUp;
+            WidgetContent.Cursor = System.Windows.Input.Cursors.Hand;
+        }
+        else
+        {
+            // Disable drag mode - remove event handlers
+            WidgetContent.MouseLeftButtonDown -= WidgetContent_MouseLeftButtonDown;
+            WidgetContent.MouseMove -= WidgetContent_MouseMove;
+            WidgetContent.MouseLeftButtonUp -= WidgetContent_MouseLeftButtonUp;
+            WidgetContent.Cursor = System.Windows.Input.Cursors.Arrow;
+            _isDragging = false;
+        }
+    }
+
+    private void WidgetContent_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (_isDraggingEnabled)
+        {
+            _isDragging = true;
+            _dragStartPoint = e.GetPosition(null);
+            WidgetContent.CaptureMouse();
+        }
+    }
+
+    private void WidgetContent_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (_isDragging && _isDraggingEnabled)
+        {
+            Point currentPosition = e.GetPosition(null);
+            double deltaX = currentPosition.X - _dragStartPoint.X;
+            double deltaY = currentPosition.Y - _dragStartPoint.Y;
+
+            Left += deltaX;
+            Top += deltaY;
+
+            _dragStartPoint = currentPosition;
+        }
+    }
+
+    private void WidgetContent_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (_isDragging)
+        {
+            _isDragging = false;
+            WidgetContent.ReleaseMouseCapture();
+        }
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        // Unregister from drag service
+        WidgetDragService.Instance.UnregisterWindow(this);
+        base.OnClosed(e);
     }
 }

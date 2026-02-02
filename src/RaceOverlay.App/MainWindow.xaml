@@ -16,14 +16,29 @@
         <local:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
     </Window.Resources>
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="250"/>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
+        <!-- Status Bar -->
+        <Border Grid.Row="0" Grid.ColumnSpan="3" Background="{StaticResource RO.SurfaceBrush}" BorderBrush="{StaticResource RO.BorderBrush}" BorderThickness="0,0,0,1" Padding="12,8">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Drag Mode: " Foreground="{StaticResource RO.MutedBrush}" FontSize="11"/>
+                <Ellipse Width="8" Height="8" Fill="{StaticResource RO.GreenBrush}" Margin="4,0,0,0" VerticalAlignment="Center" Name="DragModeIndicator"/>
+                <TextBlock Text="OFF" Foreground="{StaticResource RO.MutedBrush}" FontSize="11" Margin="4,0,0,0" Name="DragModeText"/>
+                <Separator Width="1" Background="{StaticResource RO.BorderBrush}" Margin="12,0"/>
+                <TextBlock Text="Press CTRL+F12 to toggle drag mode" Foreground="{StaticResource RO.MutedBrush}" FontSize="10" FontStyle="Italic"/>
+            </StackPanel>
+        </Border>
+
         <!-- Left Panel -->
-        <Border Grid.Column="0" Background="{StaticResource RO.SurfaceBrush}" BorderBrush="{StaticResource RO.BorderBrush}" BorderThickness="0,0,1,0">
+        <Border Grid.Row="1" Grid.Column="0" Background="{StaticResource RO.SurfaceBrush}" BorderBrush="{StaticResource RO.BorderBrush}" BorderThickness="0,0,1,0">
             <DockPanel LastChildFill="True">
                 <Border DockPanel.Dock="Top" Background="{StaticResource RO.BackgroundBrush}">
                     <TextBlock Text="Available Widgets" FontSize="14" FontWeight="Bold" Foreground="{StaticResource RO.ForegroundBrush}" Margin="12"/>
@@ -42,10 +57,10 @@
         </Border>
 
         <!-- Splitter -->
-        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="{StaticResource RO.BorderBrush}" ShowsPreview="True"/>
+        <GridSplitter Grid.Row="1" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="{StaticResource RO.BorderBrush}" ShowsPreview="True"/>
 
         <!-- Right Panel -->
-        <DockPanel Grid.Column="2" LastChildFill="True">
+        <DockPanel Grid.Row="1" Grid.Column="2" LastChildFill="True">
             <Border DockPanel.Dock="Top" Background="{StaticResource RO.BackgroundBrush}">
                 <TextBlock Text="Configuration" FontSize="14" FontWeight="Bold" Foreground="{StaticResource RO.ForegroundBrush}" Margin="12"/>
             </Border>

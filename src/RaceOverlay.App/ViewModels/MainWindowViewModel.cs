@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RaceOverlay.App.Services;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Engine.Widgets;
 using Microsoft.Extensions.DependencyInjection;
@@ -157,6 +158,9 @@ public partial class MainWindowViewModel : ObservableObject
 
         // Track the window
         _activeWindows[instanceId] = overlayWindow;
+
+        // Register with drag service for hotkey management
+        WidgetDragService.Instance.RegisterWindow(overlayWindow);
 
         // Handle window closing to clean up tracking
         overlayWindow.Closed += (s, e) =>
