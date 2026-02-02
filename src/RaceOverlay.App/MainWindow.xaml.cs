@@ -17,9 +17,17 @@ namespace RaceOverlay.App;
 /// </summary>
 public partial class MainWindow : Window
 {
+    private MainWindowViewModel _viewModel;
+
     public MainWindow(MainWindowViewModel viewModel)
     {
         InitializeComponent();
+        _viewModel = viewModel;
         DataContext = viewModel;
     }
+
+    /// <summary>
+    /// Gets the main view model instance (accessible to other windows).
+    /// </summary>
+    public MainWindowViewModel GetViewModel() => _viewModel;
 }

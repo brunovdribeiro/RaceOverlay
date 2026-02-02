@@ -6,6 +6,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RaceOverlay.App.ViewModels;
 using RaceOverlay.Engine.Widgets;
+using RaceOverlay.Engine.Views;
+using RaceOverlay.Engine.ViewModels;
+using RaceOverlay.Core.Widgets;
 
 namespace RaceOverlay.App;
 
@@ -60,11 +63,34 @@ public partial class App : Application
     private static void ConfigureServices(IServiceCollection services)
     {
         // Widget system
-        services.AddSingleton<IWidgetRegistry, WidgetRegistry>();
+        services.AddSingleton<IWidgetRegistry>(sp =>
+        {
+            var registry = new WidgetRegistry();
+
+            // Register Relative Overlay Widget
+            registry.RegisterWidget(new WidgetMetadata
+            {
+                WidgetId = "relative-overlay",
+                DisplayName = "Relative Overlay",
+                Description = "Shows drivers around you with live lap times, stint information, and Elo ratings. Perfect for measuring pace and making smarter on-track decisions.",
+                WidgetType = typeof(RelativeOverlay),
+                ConfigurationType = typeof(RelativeOverlayConfig),
+                Version = "1.0.0",
+                Author = "RaceOverlay Team"
+            });
+
+            return registry;
+        });
+
+        // Relative Overlay Widget
+        services.AddTransient<RelativeOverlay>();
+        services.AddTransient<RelativeOverlayViewModel>();
+        services.AddTransient<RelativeOverlayView>();
 
         // ViewModels
         services.AddTransient<MainWindowViewModel>();
 
         // Views
         services.AddTransient<MainWindow>();
+        services.AddTransient<WidgetOverlayWindow>();
     }}

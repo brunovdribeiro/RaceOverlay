@@ -4,12 +4,17 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RaceOverlay.App"
+        xmlns:views="clr-namespace:RaceOverlay.Engine.Views;assembly=RaceOverlay.Engine"
         mc:Ignorable="d"
         Title="RaceOverlay - Widget Manager" 
         Height="600" 
         Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource RO.BackgroundBrush}">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <local:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="250"/>
@@ -45,6 +50,17 @@
                 <TextBlock Text="Configuration" FontSize="14" FontWeight="Bold" Foreground="{StaticResource RO.ForegroundBrush}" Margin="12"/>
             </Border>
             <Border DockPanel.Dock="Top" Background="Transparent" Margin="16">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <TextBlock Text="{Binding ConfigurationDisplayText}" 
+                               Foreground="{StaticResource RO.ForegroundBrush}" 
+                               FontFamily="Courier New"
+                               FontSize="11"
+                               TextWrapping="Wrap"
+                               Padding="8"
+                               Visibility="{Binding IsWidgetSelected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                </ScrollViewer>
+            </Border>
+            <Border DockPanel.Dock="Top" Background="Transparent" Margin="16" Visibility="{Binding IsWidgetSelected, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                 <TextBlock Text="No widget selected" Foreground="{StaticResource RO.MutedBrush}" FontStyle="Italic"/>
             </Border>
             <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="12" Height="40">
