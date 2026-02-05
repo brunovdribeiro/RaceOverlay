@@ -18,6 +18,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IServiceProvider _serviceProvider;
     private readonly Dictionary<string, IWidget> _activeWidgets = new();
     private readonly Dictionary<string, WidgetOverlayWindow> _activeWindows = new();
+    private readonly Dictionary<string, RelativeOverlayConfig> _savedConfigs = new();
 
     [ObservableProperty]
     private WidgetMetadata? selectedWidget;
@@ -26,68 +27,199 @@ public partial class MainWindowViewModel : ObservableObject
     private ObservableCollection<WidgetMetadata> availableWidgets = new();
 
     [ObservableProperty]
-    private string configurationDisplayText = string.Empty;
+    private bool isWidgetSelected;
+
+    // Column visibility toggles
+    [ObservableProperty]
+    private bool showPosition = true;
 
     [ObservableProperty]
-    private bool isWidgetSelected;
+    private bool showClassColor = true;
+
+    [ObservableProperty]
+    private bool showDriverName = true;
+
+    [ObservableProperty]
+    private bool showRating = true;
+
+    [ObservableProperty]
+    private bool showStint = true;
+
+    [ObservableProperty]
+    private bool showLapTime = true;
+
+    [ObservableProperty]
+    private bool showGap = true;
+
+    [ObservableProperty]
+    private string overlayPositionText = "Not set";
+
+    // Data settings
+    [ObservableProperty]
+    private int driversAhead = 3;
+
+    [ObservableProperty]
+    private int driversBehind = 3;
+
+    [ObservableProperty]
+    private int updateIntervalMs = 500;
 
     /// <summary>
     /// Initializes a new instance of the MainWindowViewModel.
     /// </summary>
-    /// <param name="widgetRegistry">The widget registry service.</param>
-    /// <param name="serviceProvider">The dependency injection service provider.</param>
     public MainWindowViewModel(IWidgetRegistry widgetRegistry, IServiceProvider serviceProvider)
     {
         _widgetRegistry = widgetRegistry ?? throw new ArgumentNullException(nameof(widgetRegistry));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        
+
         // Load available widgets from the registry
         LoadAvailableWidgets();
     }
 
     /// <summary>
-    /// Called when selected widget changes to display its configuration.
+    /// Called when selected widget changes to load its configuration.
     /// </summary>
     partial void OnSelectedWidgetChanged(WidgetMetadata? value)
     {
         if (value == null)
         {
             IsWidgetSelected = false;
-            ConfigurationDisplayText = string.Empty;
             return;
         }
 
         IsWidgetSelected = true;
-        ConfigurationDisplayText = GenerateConfigurationText(value);
+
+        // Priority: saved config > active instance > defaults
+        if (_savedConfigs.TryGetValue(value.WidgetId, out var savedConfig))
+        {
+            LoadConfigFromWidget(savedConfig);
+        }
+        else
+        {
+            var activeInstance = _activeWidgets.Values
+                .FirstOrDefault(w => w.WidgetId == value.WidgetId);
+
+            if (activeInstance?.Configuration is IRelativeOverlayConfig config)
+            {
+                LoadConfigFromWidget(config);
+            }
+            else
+            {
+                var defaults = new RelativeOverlayConfig();
+                LoadConfigFromWidget(defaults);
+            }
+        }
+    }
+
+    private void LoadConfigFromWidget(IRelativeOverlayConfig config)
+    {
+        ShowPosition = config.ShowPosition;
+        ShowClassColor = config.ShowClassColor;
+        ShowDriverName = config.ShowDriverName;
+        ShowRating = config.ShowRating;
+        ShowStint = config.ShowStint;
+        ShowLapTime = config.ShowLapTime;
+        ShowGap = config.ShowGap;
+        DriversAhead = config.DriversAhead;
+        DriversBehind = config.DriversBehind;
+        UpdateIntervalMs = config.UpdateIntervalMs;
+        UpdatePositionText(config.OverlayLeft, config.OverlayTop);
+    }
+
+    // Push config changes to active widget instances when toggles change
+    partial void OnShowPositionChanged(bool value) => PushConfigToActiveWidgets();
+    partial void OnShowClassColorChanged(bool value) => PushConfigToActiveWidgets();
+    partial void OnShowDriverNameChanged(bool value) => PushConfigToActiveWidgets();
+    partial void OnShowRatingChanged(bool value) => PushConfigToActiveWidgets();
+    partial void OnShowStintChanged(bool value) => PushConfigToActiveWidgets();
+    partial void OnShowLapTimeChanged(bool value) => PushConfigToActiveWidgets();
+    partial void OnShowGapChanged(bool value) => PushConfigToActiveWidgets();
+    partial void OnDriversAheadChanged(int value) => PushConfigToActiveWidgets();
+    partial void OnDriversBehindChanged(int value) => PushConfigToActiveWidgets();
+    partial void OnUpdateIntervalMsChanged(int value) => PushConfigToActiveWidgets();
+
+    private void PushConfigToActiveWidgets()
+    {
+        if (SelectedWidget == null) return;
+
+        // Preserve saved position if it exists
+        double left = double.NaN, top = double.NaN;
+        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing))
+        {
+            left = existing.OverlayLeft;
+            top = existing.OverlayTop;
+        }
+
+        var config = new RelativeOverlayConfig
+        {
+            ShowPosition = ShowPosition,
+            ShowClassColor = ShowClassColor,
+            ShowDriverName = ShowDriverName,
+            ShowRating = ShowRating,
+            ShowStint = ShowStint,
+            ShowLapTime = ShowLapTime,
+            ShowGap = ShowGap,
+            DriversAhead = DriversAhead,
+            DriversBehind = DriversBehind,
+            UpdateIntervalMs = UpdateIntervalMs,
+            OverlayLeft = left,
+            OverlayTop = top
+        };
+
+        // Save snapshot
+        _savedConfigs[SelectedWidget.WidgetId] = config;
+
+        // Push to all active widget instances of this type
+        foreach (var kv in _activeWidgets)
+        {
+            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            {
+                kv.Value.UpdateConfiguration(config);
+            }
+        }
+
+        // Also push column visibility to overlay view models
+        foreach (var kv in _activeWindows)
+        {
+            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            {
+                kv.Value.ApplyColumnVisibility(config);
+            }
+        }
     }
 
     /// <summary>
-    /// Generates a human-readable configuration display text.
+    /// Saves the overlay window position for the given widget type.
+    /// Called by WidgetOverlayWindow on LocationChanged.
     /// </summary>
-    private string GenerateConfigurationText(WidgetMetadata metadata)
+    public void SaveWidgetPosition(string? widgetId, double left, double top)
     {
-        var lines = new List<string>
-        {
-            "═══════════════════════════════",
-            $"Widget: {metadata.DisplayName}",
-            $"ID: {metadata.WidgetId}",
-            $"Version: {metadata.Version}",
-            $"Author: {metadata.Author ?? "Unknown"}",
-            "",
-            "Description:",
-            metadata.Description,
-            "",
-            "Configuration Options:",
-            "  • DriversAhead: 3 drivers",
-            "  • DriversBehind: 3 drivers",
-            "  • UseMockData: true (for development)",
-            "  • UpdateIntervalMs: 500",
-            "",
-            "Status: Ready to deploy",
-            "═══════════════════════════════",
-        };
+        if (widgetId == null) return;
 
-        return string.Join(Environment.NewLine, lines);
+        if (_savedConfigs.TryGetValue(widgetId, out var config))
+        {
+            config.OverlayLeft = left;
+            config.OverlayTop = top;
+        }
+        else
+        {
+            var newConfig = new RelativeOverlayConfig { OverlayLeft = left, OverlayTop = top };
+            _savedConfigs[widgetId] = newConfig;
+        }
+
+        // Update position text if this widget is currently selected
+        if (SelectedWidget?.WidgetId == widgetId)
+        {
+            UpdatePositionText(left, top);
+        }
+    }
+
+    private void UpdatePositionText(double left, double top)
+    {
+        if (double.IsNaN(left) || double.IsNaN(top))
+            OverlayPositionText = "Not set";
+        else
+            OverlayPositionText = $"{(int)left}, {(int)top}";
     }
 
     /// <summary>
@@ -96,7 +228,7 @@ public partial class MainWindowViewModel : ObservableObject
     private void LoadAvailableWidgets()
     {
         AvailableWidgets.Clear();
-        
+
         var registeredWidgets = _widgetRegistry.GetRegisteredWidgets();
         foreach (var widget in registeredWidgets)
         {
@@ -126,7 +258,7 @@ public partial class MainWindowViewModel : ObservableObject
 
             // Generate unique ID for this instance
             string instanceId = $"{SelectedWidget.WidgetId}-{Guid.NewGuid():N}";
-            
+
             // Store in active widgets
             _activeWidgets[instanceId] = widgetInstance;
 
@@ -156,11 +288,22 @@ public partial class MainWindowViewModel : ObservableObject
             ViewModel = this
         };
 
+        // Restore saved position if available
+        if (_savedConfigs.TryGetValue(widget.WidgetId, out var savedConfig))
+        {
+            // Push saved config to the new widget instance
+            widget.UpdateConfiguration(savedConfig);
+
+            if (!double.IsNaN(savedConfig.OverlayLeft) && !double.IsNaN(savedConfig.OverlayTop))
+            {
+                overlayWindow.WindowStartupLocation = System.Windows.WindowStartupLocation.Manual;
+                overlayWindow.Left = savedConfig.OverlayLeft;
+                overlayWindow.Top = savedConfig.OverlayTop;
+            }
+        }
+
         // Track the window
         _activeWindows[instanceId] = overlayWindow;
-
-        // Register with drag service for hotkey management
-        WidgetDragService.Instance.RegisterWindow(overlayWindow);
 
         // Handle window closing to clean up tracking
         overlayWindow.Closed += (s, e) =>

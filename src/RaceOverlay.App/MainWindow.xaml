@@ -6,14 +6,34 @@
         xmlns:local="clr-namespace:RaceOverlay.App"
         xmlns:views="clr-namespace:RaceOverlay.Engine.Views;assembly=RaceOverlay.Engine"
         mc:Ignorable="d"
-        Title="RaceOverlay - Widget Manager" 
-        Height="600" 
+        Title="RaceOverlay - Widget Manager"
+        Height="600"
         Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource RO.BackgroundBrush}">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <local:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+        <Style x:Key="SettingsCheckBox" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource RO.ForegroundBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Margin" Value="0,4"/>
+        </Style>
+        <Style x:Key="SettingsLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource RO.MutedBrush}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Margin" Value="0,4,8,4"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="SettingsTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource RO.SurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource RO.ForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource RO.BorderBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="Width" Value="60"/>
+            <Setter Property="Margin" Value="0,4"/>
+        </Style>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -64,20 +84,55 @@
             <Border DockPanel.Dock="Top" Background="{StaticResource RO.BackgroundBrush}">
                 <TextBlock Text="Configuration" FontSize="14" FontWeight="Bold" Foreground="{StaticResource RO.ForegroundBrush}" Margin="12"/>
             </Border>
-            <Border DockPanel.Dock="Top" Background="Transparent" Margin="16">
+
+            <!-- Settings panel (visible when widget selected) -->
+            <Border DockPanel.Dock="Top" Background="Transparent" Margin="16"
+                    Visibility="{Binding IsWidgetSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <TextBlock Text="{Binding ConfigurationDisplayText}" 
-                               Foreground="{StaticResource RO.ForegroundBrush}" 
-                               FontFamily="Courier New"
-                               FontSize="11"
-                               TextWrapping="Wrap"
-                               Padding="8"
-                               Visibility="{Binding IsWidgetSelected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <StackPanel>
+                        <!-- Columns Section -->
+                        <TextBlock Text="COLUMNS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
+                        <CheckBox Content="Position" IsChecked="{Binding ShowPosition}" Style="{StaticResource SettingsCheckBox}"/>
+                        <CheckBox Content="Class Color" IsChecked="{Binding ShowClassColor}" Style="{StaticResource SettingsCheckBox}"/>
+                        <CheckBox Content="Driver Name" IsChecked="{Binding ShowDriverName}" Style="{StaticResource SettingsCheckBox}"/>
+                        <CheckBox Content="Rating" IsChecked="{Binding ShowRating}" Style="{StaticResource SettingsCheckBox}"/>
+                        <CheckBox Content="Stint" IsChecked="{Binding ShowStint}" Style="{StaticResource SettingsCheckBox}"/>
+                        <CheckBox Content="Lap Time" IsChecked="{Binding ShowLapTime}" Style="{StaticResource SettingsCheckBox}"/>
+                        <CheckBox Content="Gap" IsChecked="{Binding ShowGap}" Style="{StaticResource SettingsCheckBox}"/>
+
+                        <!-- Data Section -->
+                        <TextBlock Text="DATA" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Drivers Ahead" Style="{StaticResource SettingsLabel}"/>
+                            <TextBox Text="{Binding DriversAhead, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Drivers Behind" Style="{StaticResource SettingsLabel}"/>
+                            <TextBox Text="{Binding DriversBehind, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
+                            <TextBox Text="{Binding UpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                        </StackPanel>
+
+                        <!-- Position Section -->
+                        <TextBlock Text="POSITION" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Overlay Position" Style="{StaticResource SettingsLabel}"/>
+                            <TextBlock Text="{Binding OverlayPositionText}" Foreground="{StaticResource RO.ForegroundBrush}" FontSize="12" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </StackPanel>
                 </ScrollViewer>
             </Border>
+
+            <!-- No widget selected message -->
             <Border DockPanel.Dock="Top" Background="Transparent" Margin="16" Visibility="{Binding IsWidgetSelected, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                 <TextBlock Text="No widget selected" Foreground="{StaticResource RO.MutedBrush}" FontStyle="Italic"/>
             </Border>
+
             <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="12" Height="40">
                 <Button Command="{Binding AddWidgetCommand}" Content="Add Widget" Margin="4" Background="{StaticResource RO.PurpleBrush}" Foreground="White" FontSize="12" Cursor="Hand" Padding="12,8"/>
                 <Button Command="{Binding RemoveWidgetCommand}" Content="Remove Widget" Margin="4" Background="{StaticResource RO.MagentaBrush}" Foreground="White" FontSize="12" Cursor="Hand" Padding="12,8"/>

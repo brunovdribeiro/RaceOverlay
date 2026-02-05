@@ -6,8 +6,7 @@
         xmlns:views="clr-namespace:RaceOverlay.Engine.Views;assembly=RaceOverlay.Engine"
         mc:Ignorable="d"
         Title="Widget Overlay"
-        Height="600"
-        Width="400"
+        SizeToContent="WidthAndHeight"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource RO.BackgroundBrush}"
         Topmost="True"
@@ -16,6 +15,11 @@
         WindowStyle="None"
         ShowInTaskbar="False">
 
-    <!-- Widget Content -->
-    <ContentControl x:Name="WidgetContent" />
+    <Grid>
+        <!-- Layer 0: Widget Content -->
+        <ContentControl x:Name="WidgetContent" />
+
+        <!-- Layer 1: Transparent drag overlay (shown only in drag mode) -->
+        <Border x:Name="DragOverlay" Background="Transparent" Visibility="Collapsed" />
+    </Grid>
 </Window>

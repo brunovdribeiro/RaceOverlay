@@ -1,114 +1,73 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+
 namespace RaceOverlay.Engine.Models;
 
 /// <summary>
 /// Represents a driver relative to the player's position on the track.
-/// Used for the Relative Overlay widget to display nearby drivers.
+/// Uses ObservableObject so WPF detects property changes when the update loop mutates driver data.
 /// </summary>
-public class RelativeDriver
+public partial class RelativeDriver : ObservableObject
 {
-    /// <summary>
-    /// Unique identifier for this driver instance.
-    /// </summary>
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    [ObservableProperty]
+    private string id = Guid.NewGuid().ToString();
 
-    /// <summary>
-    /// Race position of the driver (1-based).
-    /// </summary>
-    public int Position { get; set; }
+    [ObservableProperty]
+    private int position;
 
-    /// <summary>
-    /// Car number/identifier.
-    /// </summary>
-    public string Number { get; set; } = string.Empty;
+    [ObservableProperty]
+    private string number = string.Empty;
 
-    /// <summary>
-    /// Driver name.
-    /// </summary>
-    public string DriverName { get; set; } = string.Empty;
+    [ObservableProperty]
+    private string driverName = string.Empty;
 
-    /// <summary>
-    /// Vehicle class (e.g., "LMP2", "GT3"). Used for visual styling.
-    /// </summary>
-    public string VehicleClass { get; set; } = string.Empty;
+    [ObservableProperty]
+    private string vehicleClass = string.Empty;
 
-    /// <summary>
-    /// Class color for UI visualization (e.g., #D946EF for burgundy, #D97706 for gold).
-    /// </summary>
-    public string ClassColor { get; set; } = "#6B7280";
+    [ObservableProperty]
+    private string classColor = "#6B7280";
 
-    /// <summary>
-    /// Elo rating of the driver (1600-3500 typical range).
-    /// </summary>
-    public double EloRating { get; set; }
+    [ObservableProperty]
+    private double eloRating;
 
-    /// <summary>
-    /// Elo grade letter (S, A+, A, B+, B, C, D, etc.).
-    /// </summary>
-    public string EloGrade { get; set; } = "C";
+    [ObservableProperty]
+    private string eloGrade = "C";
 
-    /// <summary>
-    /// Elo grade color for UI display.
-    /// </summary>
-    public string EloGradeColor { get; set; } = "#6B7280";
+    [ObservableProperty]
+    private string eloGradeColor = "#6B7280";
 
-    /// <summary>
-    /// Current lap time in seconds.
-    /// </summary>
-    public double CurrentLapTime { get; set; }
+    [ObservableProperty]
+    private double currentLapTime;
 
-    /// <summary>
-    /// Best lap time in seconds.
-    /// </summary>
-    public double BestLapTime { get; set; }
+    [ObservableProperty]
+    private double bestLapTime;
 
-    /// <summary>
-    /// Delta from best lap in seconds (positive = slower than best).
-    /// </summary>
-    public double DeltaFromBest { get; set; }
+    [ObservableProperty]
+    private double deltaFromBest;
 
-    /// <summary>
-    /// Gap/interval to the next driver ahead on track (in meters, negative = behind).
-    /// </summary>
-    public double GapToNextDriver { get; set; }
+    [ObservableProperty]
+    private double gapToNextDriver;
 
-    /// <summary>
-    /// Current stint laps completed.
-    /// </summary>
-    public int StintLapsCompleted { get; set; }
+    [ObservableProperty]
+    private int stintLapsCompleted;
 
-    /// <summary>
-    /// Total laps planned for the stint.
-    /// </summary>
-    public int StintLapsTotal { get; set; }
+    [ObservableProperty]
+    private int stintLapsTotal;
 
-    /// <summary>
-    /// Time spent in current stint (formatted string, e.g., "45:23").
-    /// </summary>
-    public string StintTime { get; set; } = "00:00";
+    [ObservableProperty]
+    private string stintTime = "00:00";
 
-    /// <summary>
-    /// Whether the driver is in the pit lane.
-    /// </summary>
-    public bool IsInPit { get; set; }
+    [ObservableProperty]
+    private bool isInPit;
 
-    /// <summary>
-    /// Driver status flag (e.g., "OUT", "DNF", "DAMAGE"). Null if none.
-    /// </summary>
-    public string? StatusFlag { get; set; }
+    [ObservableProperty]
+    private string? statusFlag;
 
-    /// <summary>
-    /// Whether the driver has damage (affects reliability/pit stops).
-    /// </summary>
-    public bool HasDamage { get; set; }
+    [ObservableProperty]
+    private bool hasDamage;
 
-    /// <summary>
-    /// Distance on track from start/finish line in meters.
-    /// Used to calculate relative positioning.
-    /// </summary>
-    public double TrackDistanceMeters { get; set; }
+    [ObservableProperty]
+    private double trackDistanceMeters;
 
-    /// <summary>
-    /// Relative position indicator: -1 = ahead, 0 = player, 1 = behind.
-    /// </summary>
-    public int RelativePosition { get; set; }
+    [ObservableProperty]
+    private int relativePosition;
 }

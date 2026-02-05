@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Media;
 using RaceOverlay.App.ViewModels;
 using RaceOverlay.App.Services;
 using RaceOverlay.Core.Widgets;
@@ -16,6 +17,8 @@ public partial class WidgetOverlayWindow : Window
     private bool _isDragging;
     private Point _dragStartPoint;
     private bool _isDraggingEnabled;
+    private RelativeOverlay? _relativeOverlay;
+    private RelativeOverlayViewModel? _viewModel;
 
     public static readonly DependencyProperty WidgetProperty =
         DependencyProperty.Register(nameof(Widget), typeof(IWidget), typeof(WidgetOverlayWindow));
@@ -57,6 +60,7 @@ public partial class WidgetOverlayWindow : Window
     {
         InitializeComponent();
         Loaded += WidgetOverlayWindow_Loaded;
+        LocationChanged += WidgetOverlayWindow_LocationChanged;
     }
 
     /// <summary>
@@ -67,11 +71,21 @@ public partial class WidgetOverlayWindow : Window
         // Create the appropriate view for the widget
         if (Widget is RelativeOverlay relativeOverlay)
         {
+            _relativeOverlay = relativeOverlay;
             var view = new RelativeOverlayView();
-            var viewModel = new RelativeOverlayViewModel();
-            viewModel.LoadRelativeDrivers(relativeOverlay.GetRelativeDrivers());
-            view.DataContext = viewModel;
+            _viewModel = new RelativeOverlayViewModel();
+
+            if (relativeOverlay.Configuration is IRelativeOverlayConfig config)
+            {
+                _viewModel.ApplyConfiguration(config);
+            }
+
+            _viewModel.LoadRelativeDrivers(relativeOverlay.GetRelativeDrivers());
+            view.DataContext = _viewModel;
             WidgetContent.Content = view;
+
+            // Subscribe to data updates from the widget's update loop
+            relativeOverlay.DataUpdated += OnDataUpdated;
         }
 
         // Register this window for drag management
@@ -82,42 +96,67 @@ public partial class WidgetOverlayWindow : Window
     }
 
     /// <summary>
+    /// Applies column visibility settings from configuration to the overlay view model.
+    /// </summary>
+    public void ApplyColumnVisibility(IRelativeOverlayConfig config)
+    {
+        _viewModel?.ApplyConfiguration(config);
+    }
+
+    private void OnDataUpdated()
+    {
+        if (_relativeOverlay == null || _viewModel == null) return;
+
+        var overlay = _relativeOverlay;
+        var vm = _viewModel;
+        Dispatcher.Invoke(() => vm.RefreshDrivers(overlay.GetRelativeDrivers()));
+    }
+
+    /// <summary>
     /// Enables or disables dragging for this window.
     /// </summary>
     public void SetDraggingEnabled(bool enabled)
     {
         _isDraggingEnabled = enabled;
-        
+
         if (enabled)
         {
-            // Enable drag mode - add event handlers
-            WidgetContent.MouseLeftButtonDown += WidgetContent_MouseLeftButtonDown;
-            WidgetContent.MouseMove += WidgetContent_MouseMove;
-            WidgetContent.MouseLeftButtonUp += WidgetContent_MouseLeftButtonUp;
-            WidgetContent.Cursor = System.Windows.Input.Cursors.Hand;
+            // Show drag overlay on top, block hit-testing on widget content
+            DragOverlay.Visibility = Visibility.Visible;
+            DragOverlay.Background = new SolidColorBrush(Color.FromArgb(0x20, 0xFF, 0xFF, 0xFF));
+            WidgetContent.IsHitTestVisible = false;
+
+            DragOverlay.MouseLeftButtonDown += DragOverlay_MouseLeftButtonDown;
+            DragOverlay.MouseMove += DragOverlay_MouseMove;
+            DragOverlay.MouseLeftButtonUp += DragOverlay_MouseLeftButtonUp;
+            DragOverlay.Cursor = System.Windows.Input.Cursors.SizeAll;
         }
         else
         {
-            // Disable drag mode - remove event handlers
-            WidgetContent.MouseLeftButtonDown -= WidgetContent_MouseLeftButtonDown;
-            WidgetContent.MouseMove -= WidgetContent_MouseMove;
-            WidgetContent.MouseLeftButtonUp -= WidgetContent_MouseLeftButtonUp;
-            WidgetContent.Cursor = System.Windows.Input.Cursors.Arrow;
+            // Hide drag overlay, restore hit-testing on widget content
+            DragOverlay.Visibility = Visibility.Collapsed;
+            DragOverlay.Background = Brushes.Transparent;
+            WidgetContent.IsHitTestVisible = true;
+
+            DragOverlay.MouseLeftButtonDown -= DragOverlay_MouseLeftButtonDown;
+            DragOverlay.MouseMove -= DragOverlay_MouseMove;
+            DragOverlay.MouseLeftButtonUp -= DragOverlay_MouseLeftButtonUp;
+            DragOverlay.Cursor = System.Windows.Input.Cursors.Arrow;
             _isDragging = false;
         }
     }
 
-    private void WidgetContent_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void DragOverlay_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (_isDraggingEnabled)
         {
             _isDragging = true;
             _dragStartPoint = e.GetPosition(null);
-            WidgetContent.CaptureMouse();
+            DragOverlay.CaptureMouse();
         }
     }
 
-    private void WidgetContent_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    private void DragOverlay_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
     {
         if (_isDragging && _isDraggingEnabled)
         {
@@ -132,17 +171,28 @@ public partial class WidgetOverlayWindow : Window
         }
     }
 
-    private void WidgetContent_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void DragOverlay_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (_isDragging)
         {
             _isDragging = false;
-            WidgetContent.ReleaseMouseCapture();
+            DragOverlay.ReleaseMouseCapture();
         }
+    }
+
+    private void WidgetOverlayWindow_LocationChanged(object? sender, EventArgs e)
+    {
+        ViewModel?.SaveWidgetPosition(Widget?.WidgetId, Left, Top);
     }
 
     protected override void OnClosed(EventArgs e)
     {
+        // Unsubscribe from data updates
+        if (_relativeOverlay != null)
+        {
+            _relativeOverlay.DataUpdated -= OnDataUpdated;
+        }
+
         // Unregister from drag service
         WidgetDragService.Instance.UnregisterWindow(this);
         base.OnClosed(e);

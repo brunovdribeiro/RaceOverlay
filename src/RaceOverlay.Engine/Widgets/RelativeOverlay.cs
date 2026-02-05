@@ -12,6 +12,15 @@ public class RelativeOverlayConfig : IRelativeOverlayConfig
     public int DriversBehind { get; set; } = 3;
     public bool UseMockData { get; set; } = true;
     public int UpdateIntervalMs { get; set; } = 500;
+    public bool ShowPosition { get; set; } = true;
+    public bool ShowClassColor { get; set; } = true;
+    public bool ShowDriverName { get; set; } = true;
+    public bool ShowRating { get; set; } = true;
+    public bool ShowStint { get; set; } = true;
+    public bool ShowLapTime { get; set; } = true;
+    public bool ShowGap { get; set; } = true;
+    public double OverlayLeft { get; set; } = double.NaN;
+    public double OverlayTop { get; set; } = double.NaN;
 }
 
 /// <summary>
@@ -25,6 +34,11 @@ public class RelativeOverlay : IWidget
     private Task? _updateTask;
     private List<RelativeDriver> _relativeDrivers = new();
     private readonly Random _random = new();
+
+    /// <summary>
+    /// Fired at the end of each update loop tick so the overlay window knows when to refresh.
+    /// </summary>
+    public event Action? DataUpdated;
 
     public string WidgetId => "relative-overlay";
     public string DisplayName => "Relative Overlay";
@@ -47,10 +61,10 @@ public class RelativeOverlay : IWidget
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        
+
         // Initialize mock data
         InitializeMockData();
-        
+
         // Start the update loop
         _updateTask = UpdateLoopAsync(_cancellationTokenSource.Token);
         await Task.CompletedTask;
@@ -59,7 +73,7 @@ public class RelativeOverlay : IWidget
     public async Task StopAsync()
     {
         _cancellationTokenSource?.Cancel();
-        
+
         if (_updateTask != null)
         {
             try
@@ -71,7 +85,7 @@ public class RelativeOverlay : IWidget
                 // Expected when cancellation is requested
             }
         }
-        
+
         _cancellationTokenSource?.Dispose();
         _relativeDrivers.Clear();
     }
@@ -85,14 +99,10 @@ public class RelativeOverlay : IWidget
 
         // Define some mock driver names and numbers
         var driverNames = new[] { "Rogerio Silva", "Matthew Naylor", "Rick Zwieten", "Istvan Fodor", "Sindre Setsaas", "Alexandr Fescov", "Marius Rieck", "John Smith", "Lucas Costa", "Max Verstappen" };
-        var vehicleClasses = new[] { "GTE", "GT3", "P2" };
-        var classColors = new[] { "#D946EF", "#D97706", "#6B7280" }; // Burgundy, Gold, Gray
-        var eloGrades = new[] { "A", "B", "C" };
-        var eloGradeColors = new[] { "#3B82F6", "#22C55E", "#6B7280" }; // Blue for A, Green for B, Gray for C
 
         // Player position at track distance 0 (reference point)
         double playerTrackDistance = 5000;
-        
+
         // Create drivers ahead of player
         for (int i = 0; i < 3; i++)
         {
@@ -139,7 +149,7 @@ public class RelativeOverlay : IWidget
 
         double bestLapTime = 90 + _random.NextDouble() * 30; // 90-120 seconds
         double currentLapTime = bestLapTime + _random.NextDouble() * 5; // Within 5 seconds of best
-        double gapToNext = _random.Next(-500, 500); // -500 to +500 meters
+        double gapToNext = (_random.NextDouble() - 0.5) * 10; // -5.0 to +5.0 seconds
 
         return new RelativeDriver
         {
@@ -183,8 +193,10 @@ public class RelativeOverlay : IWidget
                     driver.DeltaFromBest = driver.CurrentLapTime - driver.BestLapTime;
 
                     // Minor gap variation
-                    driver.GapToNextDriver += ((_random.NextDouble() - 0.5) * 2);
+                    driver.GapToNextDriver += ((_random.NextDouble() - 0.5) * 0.2);
                 }
+
+                DataUpdated?.Invoke();
 
                 await Task.Delay(_configuration.UpdateIntervalMs, cancellationToken);
             }

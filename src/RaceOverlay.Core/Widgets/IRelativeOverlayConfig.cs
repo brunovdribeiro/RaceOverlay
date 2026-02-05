@@ -30,4 +30,22 @@ public interface IRelativeOverlayConfig : IWidgetConfiguration
     /// Update frequency for relative positions (in milliseconds).
     /// </summary>
     int UpdateIntervalMs { get; set; }
+
+    bool ShowPosition { get; set; }
+    bool ShowClassColor { get; set; }
+    bool ShowDriverName { get; set; }
+    bool ShowRating { get; set; }
+    bool ShowStint { get; set; }
+    bool ShowLapTime { get; set; }
+    bool ShowGap { get; set; }
+
+    /// <summary>
+    /// Saved overlay window left position. NaN means no saved position (use CenterScreen).
+    /// </summary>
+    double OverlayLeft { get; set; }
+
+    /// <summary>
+    /// Saved overlay window top position. NaN means no saved position (use CenterScreen).
+    /// </summary>
+    double OverlayTop { get; set; }
 }
