@@ -21,6 +21,8 @@ public partial class WidgetOverlayWindow : Window
     private RelativeOverlayViewModel? _viewModel;
     private FuelCalculator? _fuelCalculator;
     private FuelCalculatorViewModel? _fuelCalcViewModel;
+    private InputsWidget? _inputsWidget;
+    private InputsViewModel? _inputsViewModel;
 
     public static readonly DependencyProperty WidgetProperty =
         DependencyProperty.Register(nameof(Widget), typeof(IWidget), typeof(WidgetOverlayWindow));
@@ -106,6 +108,23 @@ public partial class WidgetOverlayWindow : Window
 
             fuelCalc.DataUpdated += OnFuelDataUpdated;
         }
+        else if (Widget is InputsWidget inputsWidget)
+        {
+            _inputsWidget = inputsWidget;
+            var view = new InputsView();
+            _inputsViewModel = new InputsViewModel();
+
+            if (inputsWidget.Configuration is IInputsConfig config)
+            {
+                _inputsViewModel.ApplyConfiguration(config);
+            }
+
+            _inputsViewModel.UpdateInputsData(inputsWidget.GetInputsData());
+            view.DataContext = _inputsViewModel;
+            WidgetContent.Content = view;
+
+            inputsWidget.DataUpdated += OnInputsDataUpdated;
+        }
 
         // Register this window for drag management
         WidgetDragService.Instance.RegisterWindow(this);
@@ -127,6 +146,11 @@ public partial class WidgetOverlayWindow : Window
         _fuelCalcViewModel?.ApplyConfiguration(config);
     }
 
+    public void ApplyInputsConfig(IInputsConfig config)
+    {
+        _inputsViewModel?.ApplyConfiguration(config);
+    }
+
     private void OnRelativeDataUpdated()
     {
         if (_relativeOverlay == null || _viewModel == null) return;
@@ -143,6 +167,15 @@ public partial class WidgetOverlayWindow : Window
         var calc = _fuelCalculator;
         var vm = _fuelCalcViewModel;
         Dispatcher.Invoke(() => vm.UpdateFuelData(calc.GetFuelData()));
+    }
+
+    private void OnInputsDataUpdated()
+    {
+        if (_inputsWidget == null || _inputsViewModel == null) return;
+
+        var widget = _inputsWidget;
+        var vm = _inputsViewModel;
+        Dispatcher.Invoke(() => vm.UpdateInputsData(widget.GetInputsData()));
     }
 
     /// <summary>
@@ -229,6 +262,11 @@ public partial class WidgetOverlayWindow : Window
         if (_fuelCalculator != null)
         {
             _fuelCalculator.DataUpdated -= OnFuelDataUpdated;
+        }
+
+        if (_inputsWidget != null)
+        {
+            _inputsWidget.DataUpdated -= OnInputsDataUpdated;
         }
 
         // Unregister from drag service

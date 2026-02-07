@@ -91,6 +91,18 @@ public partial class App : Application
                 Author = "RaceOverlay Team"
             });
 
+            // Register Inputs Widget
+            registry.RegisterWidget(new WidgetMetadata
+            {
+                WidgetId = "inputs",
+                DisplayName = "Inputs",
+                Description = "Visualizes throttle, brake, and steering telemetry in real time.",
+                WidgetType = typeof(InputsWidget),
+                ConfigurationType = typeof(InputsConfig),
+                Version = "1.0.0",
+                Author = "RaceOverlay Team"
+            });
+
             return registry;
         });
 
@@ -103,6 +115,11 @@ public partial class App : Application
         services.AddTransient<FuelCalculator>();
         services.AddTransient<FuelCalculatorViewModel>();
         services.AddTransient<FuelCalculatorView>();
+
+        // Inputs Widget
+        services.AddTransient<InputsWidget>();
+        services.AddTransient<InputsViewModel>();
+        services.AddTransient<InputsView>();
 
         // ViewModels
         services.AddTransient<MainWindowViewModel>();

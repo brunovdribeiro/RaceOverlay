@@ -1,0 +1,159 @@
+<UserControl x:Class="RaceOverlay.Engine.Views.InputsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:conv="clr-namespace:RaceOverlay.Engine.Converters"
+             mc:Ignorable="d"
+             d:DesignHeight="260" d:DesignWidth="200"
+             Background="{DynamicResource RO.BackgroundBrush}"
+             Foreground="{DynamicResource RO.ForegroundBrush}">
+
+    <UserControl.Resources>
+        <conv:InputBarHeightConverter x:Key="BarHeightConv"/>
+        <conv:SteeringOffsetConverter x:Key="SteerOffsetConv"/>
+        <conv:StringToSolidColorBrushConverter x:Key="StrToBrushConv"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConv"/>
+
+        <Style x:Key="InputLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource RO.MutedBrush}"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="InputValue" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource RO.ForegroundBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource RO.BackgroundBrush}"
+            BorderBrush="{DynamicResource RO.BorderBrush}"
+            BorderThickness="1" CornerRadius="4" Padding="12">
+        <StackPanel>
+            <!-- Header -->
+            <TextBlock Text="INPUTS" FontSize="11" FontWeight="Bold"
+                       Foreground="{DynamicResource RO.MutedBrush}" Margin="0,0,0,8"/>
+
+            <Border Background="{DynamicResource RO.BorderBrush}" Height="1" Margin="0,0,0,10"/>
+
+            <!-- Throttle, Brake, and Clutch Bars -->
+            <Grid Height="120" Margin="0,0,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Throttle -->
+                <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                    <Border Background="{DynamicResource RO.SurfaceBrush}"
+                            CornerRadius="3" Width="36" Height="80"
+                            Name="ThrottleBarContainer">
+                        <Border CornerRadius="3" Width="36"
+                                Background="{Binding ThrottleColor, Converter={StaticResource StrToBrushConv}}"
+                                VerticalAlignment="Bottom">
+                            <Border.Height>
+                                <MultiBinding Converter="{StaticResource BarHeightConv}">
+                                    <Binding Path="Throttle"/>
+                                    <Binding Path="ActualHeight" ElementName="ThrottleBarContainer"/>
+                                </MultiBinding>
+                            </Border.Height>
+                        </Border>
+                    </Border>
+                    <TextBlock Text="THR" Style="{StaticResource InputLabel}" Margin="0,4,0,0"/>
+                    <TextBlock Style="{StaticResource InputValue}">
+                        <TextBlock.Text>
+                            <Binding Path="Throttle" StringFormat="{}{0:P0}"/>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </StackPanel>
+
+                <!-- Brake -->
+                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                    <Border Background="{DynamicResource RO.SurfaceBrush}"
+                            CornerRadius="3" Width="36" Height="80"
+                            Name="BrakeBarContainer">
+                        <Border CornerRadius="3" Width="36"
+                                Background="{Binding BrakeColor, Converter={StaticResource StrToBrushConv}}"
+                                VerticalAlignment="Bottom">
+                            <Border.Height>
+                                <MultiBinding Converter="{StaticResource BarHeightConv}">
+                                    <Binding Path="Brake"/>
+                                    <Binding Path="ActualHeight" ElementName="BrakeBarContainer"/>
+                                </MultiBinding>
+                            </Border.Height>
+                        </Border>
+                    </Border>
+                    <TextBlock Text="BRK" Style="{StaticResource InputLabel}" Margin="0,4,0,0"/>
+                    <TextBlock Style="{StaticResource InputValue}">
+                        <TextBlock.Text>
+                            <Binding Path="Brake" StringFormat="{}{0:P0}"/>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </StackPanel>
+
+                <!-- Clutch -->
+                <StackPanel Grid.Column="2" HorizontalAlignment="Center" Margin="8,0,0,0"
+                            Visibility="{Binding ShowClutch, Converter={StaticResource BoolToVisConv}}">
+                    <Border Background="{DynamicResource RO.SurfaceBrush}"
+                            CornerRadius="3" Width="36" Height="80"
+                            Name="ClutchBarContainer">
+                        <Border CornerRadius="3" Width="36"
+                                Background="{Binding ClutchColor, Converter={StaticResource StrToBrushConv}}"
+                                VerticalAlignment="Bottom">
+                            <Border.Height>
+                                <MultiBinding Converter="{StaticResource BarHeightConv}">
+                                    <Binding Path="Clutch"/>
+                                    <Binding Path="ActualHeight" ElementName="ClutchBarContainer"/>
+                                </MultiBinding>
+                            </Border.Height>
+                        </Border>
+                    </Border>
+                    <TextBlock Text="CLT" Style="{StaticResource InputLabel}" Margin="0,4,0,0"/>
+                    <TextBlock Style="{StaticResource InputValue}">
+                        <TextBlock.Text>
+                            <Binding Path="Clutch" StringFormat="{}{0:P0}"/>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
+
+            <Border Background="{DynamicResource RO.BorderBrush}" Height="1" Margin="0,6,0,6"/>
+
+            <!-- Steering -->
+            <Border Background="{DynamicResource RO.SurfaceBrush}"
+                    CornerRadius="3" Height="20"
+                    Name="SteeringTrack" Margin="0,0,0,4">
+                <!-- Center line -->
+                <Grid>
+                    <Border Width="1" Background="{DynamicResource RO.BorderBrush}"
+                            HorizontalAlignment="Center" VerticalAlignment="Stretch"/>
+                    <!-- Steering dot -->
+                    <Ellipse Width="16" Height="16"
+                             Fill="{DynamicResource RO.PurpleBrush}"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center">
+                        <Ellipse.RenderTransform>
+                            <TranslateTransform>
+                                <TranslateTransform.X>
+                                    <MultiBinding Converter="{StaticResource SteerOffsetConv}">
+                                        <Binding Path="Steering"/>
+                                        <Binding Path="ActualWidth" ElementName="SteeringTrack"/>
+                                    </MultiBinding>
+                                </TranslateTransform.X>
+                            </TranslateTransform>
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                </Grid>
+            </Border>
+
+            <TextBlock HorizontalAlignment="Center"
+                       Foreground="{DynamicResource RO.MutedBrush}" FontSize="10">
+                <Run Text="STR: "/>
+                <Run Text="{Binding Steering, StringFormat={}{0:F2}, Mode=OneWay}"/>
+            </TextBlock>
+        </StackPanel>
+    </Border>
+</UserControl>

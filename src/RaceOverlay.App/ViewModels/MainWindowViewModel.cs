@@ -71,6 +71,22 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private double fuelTankCapacity = 110.0;
 
+    // Inputs settings
+    [ObservableProperty]
+    private int inputsUpdateIntervalMs = 16;
+
+    [ObservableProperty]
+    private string inputsThrottleColor = "#22C55E";
+
+    [ObservableProperty]
+    private string inputsBrakeColor = "#EF4444";
+
+    [ObservableProperty]
+    private string inputsClutchColor = "#3B82F6";
+
+    [ObservableProperty]
+    private bool inputsShowClutch = false;
+
     /// <summary>
     /// Initializes a new instance of the MainWindowViewModel.
     /// </summary>
@@ -119,6 +135,27 @@ public partial class MainWindowViewModel : ObservableObject
                 }
             }
         }
+        else if (value.WidgetId == "inputs")
+        {
+            if (_savedConfigs.TryGetValue(value.WidgetId, out var saved) && saved is IInputsConfig inputsConfig)
+            {
+                LoadConfigFromInputsWidget(inputsConfig);
+            }
+            else
+            {
+                var activeInstance = _activeWidgets.Values
+                    .FirstOrDefault(w => w.WidgetId == value.WidgetId);
+
+                if (activeInstance?.Configuration is IInputsConfig config)
+                {
+                    LoadConfigFromInputsWidget(config);
+                }
+                else
+                {
+                    LoadConfigFromInputsWidget(new InputsConfig());
+                }
+            }
+        }
         else
         {
             // Relative Overlay or other widgets
@@ -164,6 +201,16 @@ public partial class MainWindowViewModel : ObservableObject
         UpdatePositionText(config.OverlayLeft, config.OverlayTop);
     }
 
+    private void LoadConfigFromInputsWidget(IInputsConfig config)
+    {
+        InputsUpdateIntervalMs = config.UpdateIntervalMs;
+        InputsThrottleColor = config.ThrottleColor;
+        InputsBrakeColor = config.BrakeColor;
+        InputsClutchColor = config.ClutchColor;
+        InputsShowClutch = config.ShowClutch;
+        UpdatePositionText(config.OverlayLeft, config.OverlayTop);
+    }
+
     // Push config changes to active widget instances when toggles change
     partial void OnShowPositionChanged(bool value) => PushRelativeConfigToActiveWidgets();
     partial void OnShowClassColorChanged(bool value) => PushRelativeConfigToActiveWidgets();
@@ -177,6 +224,12 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnUpdateIntervalMsChanged(int value) => PushRelativeConfigToActiveWidgets();
 
     partial void OnFuelTankCapacityChanged(double value) => PushFuelConfigToActiveWidgets();
+
+    partial void OnInputsUpdateIntervalMsChanged(int value) => PushInputsConfigToActiveWidgets();
+    partial void OnInputsThrottleColorChanged(string value) => PushInputsConfigToActiveWidgets();
+    partial void OnInputsBrakeColorChanged(string value) => PushInputsConfigToActiveWidgets();
+    partial void OnInputsClutchColorChanged(string value) => PushInputsConfigToActiveWidgets();
+    partial void OnInputsShowClutchChanged(bool value) => PushInputsConfigToActiveWidgets();
 
     private void PushRelativeConfigToActiveWidgets()
     {
@@ -221,6 +274,47 @@ public partial class MainWindowViewModel : ObservableObject
             if (kv.Key.StartsWith(SelectedWidget.WidgetId))
             {
                 kv.Value.ApplyColumnVisibility(config);
+            }
+        }
+    }
+
+    private void PushInputsConfigToActiveWidgets()
+    {
+        if (SelectedWidget == null || SelectedWidgetId != "inputs") return;
+
+        double left = double.NaN, top = double.NaN;
+        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing) && existing is InputsConfig existingInputs)
+        {
+            left = existingInputs.OverlayLeft;
+            top = existingInputs.OverlayTop;
+        }
+
+        var config = new InputsConfig
+        {
+            UpdateIntervalMs = InputsUpdateIntervalMs,
+            ThrottleColor = InputsThrottleColor,
+            BrakeColor = InputsBrakeColor,
+            ClutchColor = InputsClutchColor,
+            ShowClutch = InputsShowClutch,
+            OverlayLeft = left,
+            OverlayTop = top
+        };
+
+        _savedConfigs[SelectedWidget.WidgetId] = config;
+
+        foreach (var kv in _activeWidgets)
+        {
+            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            {
+                kv.Value.UpdateConfiguration(config);
+            }
+        }
+
+        foreach (var kv in _activeWindows)
+        {
+            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            {
+                kv.Value.ApplyInputsConfig(config);
             }
         }
     }
@@ -282,12 +376,21 @@ public partial class MainWindowViewModel : ObservableObject
                 fuelConfig.OverlayLeft = left;
                 fuelConfig.OverlayTop = top;
             }
+            else if (config is InputsConfig inputsConfig)
+            {
+                inputsConfig.OverlayLeft = left;
+                inputsConfig.OverlayTop = top;
+            }
         }
         else
         {
             if (widgetId == "fuel-calculator")
             {
                 _savedConfigs[widgetId] = new FuelCalculatorConfig { OverlayLeft = left, OverlayTop = top };
+            }
+            else if (widgetId == "inputs")
+            {
+                _savedConfigs[widgetId] = new InputsConfig { OverlayLeft = left, OverlayTop = top };
             }
             else
             {
@@ -390,6 +493,11 @@ public partial class MainWindowViewModel : ObservableObject
             {
                 savedLeft = fuelConfig.OverlayLeft;
                 savedTop = fuelConfig.OverlayTop;
+            }
+            else if (savedConfig is InputsConfig inputsConfig)
+            {
+                savedLeft = inputsConfig.OverlayLeft;
+                savedTop = inputsConfig.OverlayTop;
             }
 
             if (!double.IsNaN(savedLeft) && !double.IsNaN(savedTop))
