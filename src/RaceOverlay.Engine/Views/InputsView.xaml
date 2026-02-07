@@ -71,7 +71,7 @@
                 </StackPanel>
 
                 <!-- Brake -->
-                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                <StackPanel Grid.Column="1" HorizontalAlignment="Center" Margin="8,0,0,0">
                     <Border Background="{DynamicResource RO.SurfaceBrush}"
                             CornerRadius="3" Width="36" Height="80"
                             Name="BrakeBarContainer">

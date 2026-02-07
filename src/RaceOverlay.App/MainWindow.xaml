@@ -91,8 +91,18 @@
                 <TextBlock Text="Configuration" FontSize="14" FontWeight="Bold" Foreground="{StaticResource RO.ForegroundBrush}" Margin="12"/>
             </Border>
 
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="12" Height="40">
+                <Button Command="{Binding AddWidgetCommand}" Content="Add Widget" Margin="4" Background="{StaticResource RO.PurpleBrush}" Foreground="White" FontSize="12" Cursor="Hand" Padding="12,8"/>
+                <Button Command="{Binding RemoveWidgetCommand}" Content="Remove Widget" Margin="4" Background="{StaticResource RO.MagentaBrush}" Foreground="White" FontSize="12" Cursor="Hand" Padding="12,8"/>
+            </StackPanel>
+
+            <!-- No widget selected message -->
+            <Border DockPanel.Dock="Top" Background="Transparent" Margin="16" Visibility="{Binding IsWidgetSelected, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                <TextBlock Text="No widget selected" Foreground="{StaticResource RO.MutedBrush}" FontStyle="Italic"/>
+            </Border>
+
             <!-- Settings panel (visible when widget selected) -->
-            <Border DockPanel.Dock="Top" Background="Transparent" Margin="16"
+            <Border Background="Transparent" Margin="16"
                     Visibility="{Binding IsWidgetSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
@@ -252,15 +262,6 @@
                 </ScrollViewer>
             </Border>
 
-            <!-- No widget selected message -->
-            <Border DockPanel.Dock="Top" Background="Transparent" Margin="16" Visibility="{Binding IsWidgetSelected, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
-                <TextBlock Text="No widget selected" Foreground="{StaticResource RO.MutedBrush}" FontStyle="Italic"/>
-            </Border>
-
-            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="12" Height="40">
-                <Button Command="{Binding AddWidgetCommand}" Content="Add Widget" Margin="4" Background="{StaticResource RO.PurpleBrush}" Foreground="White" FontSize="12" Cursor="Hand" Padding="12,8"/>
-                <Button Command="{Binding RemoveWidgetCommand}" Content="Remove Widget" Margin="4" Background="{StaticResource RO.MagentaBrush}" Foreground="White" FontSize="12" Cursor="Hand" Padding="12,8"/>
-            </StackPanel>
         </DockPanel>
     </Grid>
 </Window>
