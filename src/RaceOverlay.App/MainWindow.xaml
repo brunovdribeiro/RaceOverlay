@@ -204,6 +204,44 @@
                             <CheckBox Content="Show Clutch" IsChecked="{Binding InputsShowClutch}" Style="{StaticResource SettingsCheckBox}"/>
                         </StackPanel>
 
+                        <!-- Input Trace Settings -->
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedWidgetId}" Value="input-trace">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+
+                            <TextBlock Text="INPUT TRACE SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
+
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
+                                <TextBox Text="{Binding InputTraceUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="History (seconds)" Style="{StaticResource SettingsLabel}"/>
+                                <TextBox Text="{Binding InputTraceHistorySeconds, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                            </StackPanel>
+
+                            <TextBlock Text="COLORS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Throttle" Style="{StaticResource SettingsLabel}"/>
+                                <TextBox Text="{Binding InputTraceThrottleColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Brake" Style="{StaticResource SettingsLabel}"/>
+                                <TextBox Text="{Binding InputTraceBrakeColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
+                            </StackPanel>
+                        </StackPanel>
+
                         <!-- Position Section (shared) -->
                         <TextBlock Text="POSITION" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
                         <StackPanel Orientation="Horizontal">

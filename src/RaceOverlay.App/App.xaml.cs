@@ -103,6 +103,18 @@ public partial class App : Application
                 Author = "RaceOverlay Team"
             });
 
+            // Register Input Trace Widget
+            registry.RegisterWidget(new WidgetMetadata
+            {
+                WidgetId = "input-trace",
+                DisplayName = "Input Trace",
+                Description = "Scrolling line chart of throttle and brake inputs over time.",
+                WidgetType = typeof(InputTraceWidget),
+                ConfigurationType = typeof(InputTraceConfig),
+                Version = "1.0.0",
+                Author = "RaceOverlay Team"
+            });
+
             return registry;
         });
 
@@ -120,6 +132,11 @@ public partial class App : Application
         services.AddTransient<InputsWidget>();
         services.AddTransient<InputsViewModel>();
         services.AddTransient<InputsView>();
+
+        // Input Trace Widget
+        services.AddTransient<InputTraceWidget>();
+        services.AddTransient<InputTraceViewModel>();
+        services.AddTransient<InputTraceView>();
 
         // ViewModels
         services.AddTransient<MainWindowViewModel>();

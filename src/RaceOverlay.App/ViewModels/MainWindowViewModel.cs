@@ -87,6 +87,19 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private bool inputsShowClutch = false;
 
+    // Input Trace settings
+    [ObservableProperty]
+    private int inputTraceUpdateIntervalMs = 16;
+
+    [ObservableProperty]
+    private string inputTraceThrottleColor = "#22C55E";
+
+    [ObservableProperty]
+    private string inputTraceBrakeColor = "#EF4444";
+
+    [ObservableProperty]
+    private int inputTraceHistorySeconds = 10;
+
     /// <summary>
     /// Initializes a new instance of the MainWindowViewModel.
     /// </summary>
@@ -156,6 +169,27 @@ public partial class MainWindowViewModel : ObservableObject
                 }
             }
         }
+        else if (value.WidgetId == "input-trace")
+        {
+            if (_savedConfigs.TryGetValue(value.WidgetId, out var saved) && saved is IInputTraceConfig inputTraceConfig)
+            {
+                LoadConfigFromInputTraceWidget(inputTraceConfig);
+            }
+            else
+            {
+                var activeInstance = _activeWidgets.Values
+                    .FirstOrDefault(w => w.WidgetId == value.WidgetId);
+
+                if (activeInstance?.Configuration is IInputTraceConfig config)
+                {
+                    LoadConfigFromInputTraceWidget(config);
+                }
+                else
+                {
+                    LoadConfigFromInputTraceWidget(new InputTraceConfig());
+                }
+            }
+        }
         else
         {
             // Relative Overlay or other widgets
@@ -211,6 +245,15 @@ public partial class MainWindowViewModel : ObservableObject
         UpdatePositionText(config.OverlayLeft, config.OverlayTop);
     }
 
+    private void LoadConfigFromInputTraceWidget(IInputTraceConfig config)
+    {
+        InputTraceUpdateIntervalMs = config.UpdateIntervalMs;
+        InputTraceThrottleColor = config.ThrottleColor;
+        InputTraceBrakeColor = config.BrakeColor;
+        InputTraceHistorySeconds = config.HistorySeconds;
+        UpdatePositionText(config.OverlayLeft, config.OverlayTop);
+    }
+
     // Push config changes to active widget instances when toggles change
     partial void OnShowPositionChanged(bool value) => PushRelativeConfigToActiveWidgets();
     partial void OnShowClassColorChanged(bool value) => PushRelativeConfigToActiveWidgets();
@@ -230,6 +273,11 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnInputsBrakeColorChanged(string value) => PushInputsConfigToActiveWidgets();
     partial void OnInputsClutchColorChanged(string value) => PushInputsConfigToActiveWidgets();
     partial void OnInputsShowClutchChanged(bool value) => PushInputsConfigToActiveWidgets();
+
+    partial void OnInputTraceUpdateIntervalMsChanged(int value) => PushInputTraceConfigToActiveWidgets();
+    partial void OnInputTraceThrottleColorChanged(string value) => PushInputTraceConfigToActiveWidgets();
+    partial void OnInputTraceBrakeColorChanged(string value) => PushInputTraceConfigToActiveWidgets();
+    partial void OnInputTraceHistorySecondsChanged(int value) => PushInputTraceConfigToActiveWidgets();
 
     private void PushRelativeConfigToActiveWidgets()
     {
@@ -319,6 +367,46 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
+    private void PushInputTraceConfigToActiveWidgets()
+    {
+        if (SelectedWidget == null || SelectedWidgetId != "input-trace") return;
+
+        double left = double.NaN, top = double.NaN;
+        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing) && existing is InputTraceConfig existingTrace)
+        {
+            left = existingTrace.OverlayLeft;
+            top = existingTrace.OverlayTop;
+        }
+
+        var config = new InputTraceConfig
+        {
+            UpdateIntervalMs = InputTraceUpdateIntervalMs,
+            ThrottleColor = InputTraceThrottleColor,
+            BrakeColor = InputTraceBrakeColor,
+            HistorySeconds = InputTraceHistorySeconds,
+            OverlayLeft = left,
+            OverlayTop = top
+        };
+
+        _savedConfigs[SelectedWidget.WidgetId] = config;
+
+        foreach (var kv in _activeWidgets)
+        {
+            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            {
+                kv.Value.UpdateConfiguration(config);
+            }
+        }
+
+        foreach (var kv in _activeWindows)
+        {
+            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            {
+                kv.Value.ApplyInputTraceConfig(config);
+            }
+        }
+    }
+
     private void PushFuelConfigToActiveWidgets()
     {
         if (SelectedWidget == null || SelectedWidgetId != "fuel-calculator") return;
@@ -381,6 +469,11 @@ public partial class MainWindowViewModel : ObservableObject
                 inputsConfig.OverlayLeft = left;
                 inputsConfig.OverlayTop = top;
             }
+            else if (config is InputTraceConfig inputTraceConfig)
+            {
+                inputTraceConfig.OverlayLeft = left;
+                inputTraceConfig.OverlayTop = top;
+            }
         }
         else
         {
@@ -391,6 +484,10 @@ public partial class MainWindowViewModel : ObservableObject
             else if (widgetId == "inputs")
             {
                 _savedConfigs[widgetId] = new InputsConfig { OverlayLeft = left, OverlayTop = top };
+            }
+            else if (widgetId == "input-trace")
+            {
+                _savedConfigs[widgetId] = new InputTraceConfig { OverlayLeft = left, OverlayTop = top };
             }
             else
             {
@@ -498,6 +595,11 @@ public partial class MainWindowViewModel : ObservableObject
             {
                 savedLeft = inputsConfig.OverlayLeft;
                 savedTop = inputsConfig.OverlayTop;
+            }
+            else if (savedConfig is InputTraceConfig inputTraceConfig)
+            {
+                savedLeft = inputTraceConfig.OverlayLeft;
+                savedTop = inputTraceConfig.OverlayTop;
             }
 
             if (!double.IsNaN(savedLeft) && !double.IsNaN(savedTop))

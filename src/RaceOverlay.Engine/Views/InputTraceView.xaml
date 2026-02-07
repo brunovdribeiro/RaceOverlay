@@ -1,0 +1,60 @@
+<UserControl x:Class="RaceOverlay.Engine.Views.InputTraceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="160" d:DesignWidth="500"
+             MinWidth="500"
+             Background="{DynamicResource RO.BackgroundBrush}"
+             Foreground="{DynamicResource RO.ForegroundBrush}">
+
+    <Border Background="{DynamicResource RO.BackgroundBrush}"
+            BorderBrush="{DynamicResource RO.BorderBrush}"
+            BorderThickness="1" CornerRadius="4" Padding="12">
+        <StackPanel>
+            <!-- Header -->
+            <TextBlock Text="INPUT TRACE" FontSize="11" FontWeight="Bold"
+                       Foreground="{DynamicResource RO.MutedBrush}" Margin="0,0,0,8"/>
+
+            <Border Background="{DynamicResource RO.BorderBrush}" Height="1" Margin="0,0,0,8"/>
+
+            <!-- Chart area -->
+            <Grid Height="100">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="28"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Y-axis labels -->
+                <StackPanel Grid.Column="0" VerticalAlignment="Stretch">
+                    <TextBlock Text="100%" FontSize="8" Foreground="{DynamicResource RO.MutedBrush}"
+                               VerticalAlignment="Top" Margin="0,-3,0,0"/>
+                    <TextBlock Text="50%" FontSize="8" Foreground="{DynamicResource RO.MutedBrush}"
+                               VerticalAlignment="Center" Margin="0,27,0,0"/>
+                    <TextBlock Text="0%" FontSize="8" Foreground="{DynamicResource RO.MutedBrush}"
+                               VerticalAlignment="Bottom" Margin="0,27,0,-3"/>
+                </StackPanel>
+
+                <!-- Chart canvas -->
+                <Border Grid.Column="1" Background="{DynamicResource RO.SurfaceBrush}" CornerRadius="2">
+                    <Grid>
+                        <!-- Grid lines -->
+                        <Border Height="1" Background="{DynamicResource RO.BorderBrush}"
+                                VerticalAlignment="Top" Opacity="0.5"/>
+                        <Border Height="1" Background="{DynamicResource RO.BorderBrush}"
+                                VerticalAlignment="Center" Opacity="0.3"/>
+                        <Border Height="1" Background="{DynamicResource RO.BorderBrush}"
+                                VerticalAlignment="Bottom" Opacity="0.5"/>
+
+                        <!-- Polylines drawn in code-behind -->
+                        <Canvas Name="ChartCanvas" ClipToBounds="True">
+                            <Polyline Name="ThrottleLine" StrokeThickness="1.5" Opacity="0.9"/>
+                            <Polyline Name="BrakeLine" StrokeThickness="1.5" Opacity="0.9"/>
+                        </Canvas>
+                    </Grid>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>

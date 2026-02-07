@@ -23,6 +23,8 @@ public partial class WidgetOverlayWindow : Window
     private FuelCalculatorViewModel? _fuelCalcViewModel;
     private InputsWidget? _inputsWidget;
     private InputsViewModel? _inputsViewModel;
+    private InputTraceWidget? _inputTraceWidget;
+    private InputTraceViewModel? _inputTraceViewModel;
 
     public static readonly DependencyProperty WidgetProperty =
         DependencyProperty.Register(nameof(Widget), typeof(IWidget), typeof(WidgetOverlayWindow));
@@ -125,6 +127,23 @@ public partial class WidgetOverlayWindow : Window
 
             inputsWidget.DataUpdated += OnInputsDataUpdated;
         }
+        else if (Widget is InputTraceWidget inputTraceWidget)
+        {
+            _inputTraceWidget = inputTraceWidget;
+            var view = new InputTraceView();
+            _inputTraceViewModel = new InputTraceViewModel();
+
+            if (inputTraceWidget.Configuration is IInputTraceConfig config)
+            {
+                _inputTraceViewModel.ApplyConfiguration(config);
+            }
+
+            _inputTraceViewModel.UpdateTrace(inputTraceWidget.GetTraceHistory());
+            view.DataContext = _inputTraceViewModel;
+            WidgetContent.Content = view;
+
+            inputTraceWidget.DataUpdated += OnInputTraceDataUpdated;
+        }
 
         // Register this window for drag management
         WidgetDragService.Instance.RegisterWindow(this);
@@ -149,6 +168,11 @@ public partial class WidgetOverlayWindow : Window
     public void ApplyInputsConfig(IInputsConfig config)
     {
         _inputsViewModel?.ApplyConfiguration(config);
+    }
+
+    public void ApplyInputTraceConfig(IInputTraceConfig config)
+    {
+        _inputTraceViewModel?.ApplyConfiguration(config);
     }
 
     private void OnRelativeDataUpdated()
@@ -176,6 +200,15 @@ public partial class WidgetOverlayWindow : Window
         var widget = _inputsWidget;
         var vm = _inputsViewModel;
         Dispatcher.Invoke(() => vm.UpdateInputsData(widget.GetInputsData()));
+    }
+
+    private void OnInputTraceDataUpdated()
+    {
+        if (_inputTraceWidget == null || _inputTraceViewModel == null) return;
+
+        var widget = _inputTraceWidget;
+        var vm = _inputTraceViewModel;
+        Dispatcher.Invoke(() => vm.UpdateTrace(widget.GetTraceHistory()));
     }
 
     /// <summary>
@@ -267,6 +300,11 @@ public partial class WidgetOverlayWindow : Window
         if (_inputsWidget != null)
         {
             _inputsWidget.DataUpdated -= OnInputsDataUpdated;
+        }
+
+        if (_inputTraceWidget != null)
+        {
+            _inputTraceWidget.DataUpdated -= OnInputTraceDataUpdated;
         }
 
         // Unregister from drag service
