@@ -1,0 +1,146 @@
+<UserControl x:Class="RaceOverlay.Engine.Views.LapTimerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:conv="clr-namespace:RaceOverlay.Engine.Converters"
+             mc:Ignorable="d"
+             d:DesignHeight="250" d:DesignWidth="280"
+             Background="{StaticResource RO.BackgroundBrush}"
+             Foreground="{StaticResource RO.ForegroundBrush}"
+             MinWidth="280">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <conv:LapTimeConverter x:Key="LapTimeConv"/>
+        <conv:GreaterThanZeroConverter x:Key="GtZeroConv"/>
+    </UserControl.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="{StaticResource RO.SurfaceBrush}"
+                BorderBrush="{StaticResource RO.BorderBrush}"
+                BorderThickness="0,0,0,1" Padding="8,10" Margin="0,0,0,4">
+            <DockPanel>
+                <TextBlock Text="LAP TIMER" FontSize="14" FontWeight="Bold"
+                           Foreground="{StaticResource RO.ForegroundBrush}"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <TextBlock FontSize="14" FontWeight="SemiBold"
+                               Foreground="{StaticResource RO.MutedBrush}">
+                        <Run Text="L"/><Run Text="{Binding CurrentLap, Mode=OneWay}"/><Run Text="/"/><Run Text="{Binding TotalLaps, Mode=OneWay}"/>
+                    </TextBlock>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Current Lap + Delta to Best -->
+        <Border Grid.Row="1" Background="{StaticResource RO.SurfaceBrush}"
+                BorderBrush="{StaticResource RO.BorderBrush}"
+                BorderThickness="0,0,0,1" Padding="8,8" Margin="0,0,0,2">
+            <StackPanel>
+                <!-- Current Lap Time -->
+                <DockPanel>
+                    <TextBlock Text="CURRENT" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource RO.MutedBrush}"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding CurrentLapTime, Converter={StaticResource LapTimeConv}}"
+                               FontSize="20" FontWeight="Bold"
+                               Foreground="{StaticResource RO.ForegroundBrush}"
+                               HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                </DockPanel>
+
+                <!-- Delta to Best -->
+                <DockPanel Margin="0,4,0,0"
+                           Visibility="{Binding ShowDeltaToBest, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="DELTA TO BEST" FontSize="10"
+                               Foreground="{StaticResource RO.MutedBrush}"
+                               VerticalAlignment="Center"/>
+                    <TextBlock FontSize="14" FontWeight="SemiBold"
+                               HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="{Binding DeltaToBest, StringFormat=+{0:F3}}"/>
+                                <Setter Property="Foreground" Value="{StaticResource RO.GreenBrush}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding DeltaToBest, Converter={StaticResource GtZeroConv}}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource RO.RedBrush}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsOutLap}" Value="True">
+                                        <Setter Property="Text" Value="---"/>
+                                        <Setter Property="Foreground" Value="{StaticResource RO.MutedBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </DockPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Last Lap + Best Lap -->
+        <Border Grid.Row="2" Background="{StaticResource RO.SurfaceBrush}"
+                BorderBrush="{StaticResource RO.BorderBrush}"
+                BorderThickness="0,0,0,1" Padding="8,8" Margin="0,0,0,2">
+            <StackPanel>
+                <!-- Last Lap -->
+                <DockPanel Visibility="{Binding ShowLastLap, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="LAST LAP" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource RO.MutedBrush}"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding LastLapTime, Converter={StaticResource LapTimeConv}}"
+                               FontSize="14" FontWeight="SemiBold"
+                               Foreground="{StaticResource RO.ForegroundBrush}"
+                               HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                </DockPanel>
+
+                <!-- Best Lap -->
+                <DockPanel Margin="0,4,0,0"
+                           Visibility="{Binding ShowBestLap, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="BEST LAP" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource RO.MutedBrush}"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding BestLapTime, Converter={StaticResource LapTimeConv}}"
+                               FontSize="14" FontWeight="SemiBold"
+                               Foreground="{StaticResource RO.GreenBrush}"
+                               HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                </DockPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Delta Last vs Best -->
+        <Border Grid.Row="3" Background="{StaticResource RO.SurfaceBrush}"
+                Padding="8,8"
+                Visibility="{Binding ShowDeltaLastBest, Converter={StaticResource BoolToVis}}">
+            <DockPanel>
+                <TextBlock Text="DELTA LAST/BEST" FontSize="10"
+                           Foreground="{StaticResource RO.MutedBrush}"
+                           VerticalAlignment="Center"/>
+                <TextBlock FontSize="14" FontWeight="SemiBold"
+                           HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="{Binding DeltaLastBest, StringFormat=+{0:F3}}"/>
+                            <Setter Property="Foreground" Value="{StaticResource RO.GreenBrush}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DeltaLastBest, Converter={StaticResource GtZeroConv}}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource RO.RedBrush}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding DeltaLastBest}" Value="0">
+                                    <Setter Property="Text" Value="---"/>
+                                    <Setter Property="Foreground" Value="{StaticResource RO.MutedBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

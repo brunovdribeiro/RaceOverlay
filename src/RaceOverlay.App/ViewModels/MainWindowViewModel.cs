@@ -103,6 +103,22 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private int standingsMaxDrivers = 20;
 
+    // Lap Timer settings
+    [ObservableProperty]
+    private int lapTimerUpdateIntervalMs = 50;
+
+    [ObservableProperty]
+    private bool lapTimerShowDeltaToBest = true;
+
+    [ObservableProperty]
+    private bool lapTimerShowLastLap = true;
+
+    [ObservableProperty]
+    private bool lapTimerShowBestLap = true;
+
+    [ObservableProperty]
+    private bool lapTimerShowDeltaLastBest = true;
+
     // Input Trace settings
     [ObservableProperty]
     private int inputTraceUpdateIntervalMs = 16;
@@ -227,6 +243,27 @@ public partial class MainWindowViewModel : ObservableObject
                 }
             }
         }
+        else if (value.WidgetId == "lap-timer")
+        {
+            if (_savedConfigs.TryGetValue(value.WidgetId, out var saved) && saved is ILapTimerConfig lapTimerConfig)
+            {
+                LoadConfigFromLapTimerWidget(lapTimerConfig);
+            }
+            else
+            {
+                var activeInstance = _activeWidgets.Values
+                    .FirstOrDefault(w => w.WidgetId == value.WidgetId);
+
+                if (activeInstance?.Configuration is ILapTimerConfig config)
+                {
+                    LoadConfigFromLapTimerWidget(config);
+                }
+                else
+                {
+                    LoadConfigFromLapTimerWidget(new LapTimerConfig());
+                }
+            }
+        }
         else
         {
             // Relative Overlay or other widgets
@@ -301,6 +338,16 @@ public partial class MainWindowViewModel : ObservableObject
         UpdatePositionText(config.OverlayLeft, config.OverlayTop);
     }
 
+    private void LoadConfigFromLapTimerWidget(ILapTimerConfig config)
+    {
+        LapTimerUpdateIntervalMs = config.UpdateIntervalMs;
+        LapTimerShowDeltaToBest = config.ShowDeltaToBest;
+        LapTimerShowLastLap = config.ShowLastLap;
+        LapTimerShowBestLap = config.ShowBestLap;
+        LapTimerShowDeltaLastBest = config.ShowDeltaLastBest;
+        UpdatePositionText(config.OverlayLeft, config.OverlayTop);
+    }
+
     // Push config changes to active widget instances when toggles change
     partial void OnShowPositionChanged(bool value) => PushRelativeConfigToActiveWidgets();
     partial void OnShowClassColorChanged(bool value) => PushRelativeConfigToActiveWidgets();
@@ -331,6 +378,12 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnStandingsShowBestLapTimeChanged(bool value) => PushStandingsConfigToActiveWidgets();
     partial void OnStandingsShowGapChanged(bool value) => PushStandingsConfigToActiveWidgets();
     partial void OnStandingsMaxDriversChanged(int value) => PushStandingsConfigToActiveWidgets();
+
+    partial void OnLapTimerUpdateIntervalMsChanged(int value) => PushLapTimerConfigToActiveWidgets();
+    partial void OnLapTimerShowDeltaToBestChanged(bool value) => PushLapTimerConfigToActiveWidgets();
+    partial void OnLapTimerShowLastLapChanged(bool value) => PushLapTimerConfigToActiveWidgets();
+    partial void OnLapTimerShowBestLapChanged(bool value) => PushLapTimerConfigToActiveWidgets();
+    partial void OnLapTimerShowDeltaLastBestChanged(bool value) => PushLapTimerConfigToActiveWidgets();
 
     private void PushRelativeConfigToActiveWidgets()
     {
@@ -501,6 +554,47 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
+    private void PushLapTimerConfigToActiveWidgets()
+    {
+        if (SelectedWidget == null || SelectedWidgetId != "lap-timer") return;
+
+        double left = double.NaN, top = double.NaN;
+        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing) && existing is LapTimerConfig existingLapTimer)
+        {
+            left = existingLapTimer.OverlayLeft;
+            top = existingLapTimer.OverlayTop;
+        }
+
+        var config = new LapTimerConfig
+        {
+            UpdateIntervalMs = LapTimerUpdateIntervalMs,
+            ShowDeltaToBest = LapTimerShowDeltaToBest,
+            ShowLastLap = LapTimerShowLastLap,
+            ShowBestLap = LapTimerShowBestLap,
+            ShowDeltaLastBest = LapTimerShowDeltaLastBest,
+            OverlayLeft = left,
+            OverlayTop = top
+        };
+
+        _savedConfigs[SelectedWidget.WidgetId] = config;
+
+        foreach (var kv in _activeWidgets)
+        {
+            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            {
+                kv.Value.UpdateConfiguration(config);
+            }
+        }
+
+        foreach (var kv in _activeWindows)
+        {
+            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            {
+                kv.Value.ApplyLapTimerConfig(config);
+            }
+        }
+    }
+
     private void PushFuelConfigToActiveWidgets()
     {
         if (SelectedWidget == null || SelectedWidgetId != "fuel-calculator") return;
@@ -573,6 +667,11 @@ public partial class MainWindowViewModel : ObservableObject
                 standingsConfig.OverlayLeft = left;
                 standingsConfig.OverlayTop = top;
             }
+            else if (config is LapTimerConfig lapTimerConfig)
+            {
+                lapTimerConfig.OverlayLeft = left;
+                lapTimerConfig.OverlayTop = top;
+            }
         }
         else
         {
@@ -591,6 +690,10 @@ public partial class MainWindowViewModel : ObservableObject
             else if (widgetId == "standings")
             {
                 _savedConfigs[widgetId] = new StandingsConfig { OverlayLeft = left, OverlayTop = top };
+            }
+            else if (widgetId == "lap-timer")
+            {
+                _savedConfigs[widgetId] = new LapTimerConfig { OverlayLeft = left, OverlayTop = top };
             }
             else
             {
@@ -708,6 +811,11 @@ public partial class MainWindowViewModel : ObservableObject
             {
                 savedLeft = standingsConfig.OverlayLeft;
                 savedTop = standingsConfig.OverlayTop;
+            }
+            else if (savedConfig is LapTimerConfig lapTimerConfig)
+            {
+                savedLeft = lapTimerConfig.OverlayLeft;
+                savedTop = lapTimerConfig.OverlayTop;
             }
 
             if (!double.IsNaN(savedLeft) && !double.IsNaN(savedTop))

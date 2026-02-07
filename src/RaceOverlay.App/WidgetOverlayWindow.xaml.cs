@@ -27,6 +27,8 @@ public partial class WidgetOverlayWindow : Window
     private InputTraceViewModel? _inputTraceViewModel;
     private StandingsWidget? _standingsWidget;
     private StandingsViewModel? _standingsViewModel;
+    private LapTimerWidget? _lapTimerWidget;
+    private LapTimerViewModel? _lapTimerViewModel;
 
     public static readonly DependencyProperty WidgetProperty =
         DependencyProperty.Register(nameof(Widget), typeof(IWidget), typeof(WidgetOverlayWindow));
@@ -163,6 +165,23 @@ public partial class WidgetOverlayWindow : Window
 
             standingsWidget.DataUpdated += OnStandingsDataUpdated;
         }
+        else if (Widget is LapTimerWidget lapTimerWidget)
+        {
+            _lapTimerWidget = lapTimerWidget;
+            var view = new LapTimerView();
+            _lapTimerViewModel = new LapTimerViewModel();
+
+            if (lapTimerWidget.Configuration is ILapTimerConfig config)
+            {
+                _lapTimerViewModel.ApplyConfiguration(config);
+            }
+
+            _lapTimerViewModel.UpdateLapData(lapTimerWidget.GetLapTimerData());
+            view.DataContext = _lapTimerViewModel;
+            WidgetContent.Content = view;
+
+            lapTimerWidget.DataUpdated += OnLapTimerDataUpdated;
+        }
 
         // Register this window for drag management
         WidgetDragService.Instance.RegisterWindow(this);
@@ -197,6 +216,11 @@ public partial class WidgetOverlayWindow : Window
     public void ApplyStandingsConfig(IStandingsConfig config)
     {
         _standingsViewModel?.ApplyConfiguration(config);
+    }
+
+    public void ApplyLapTimerConfig(ILapTimerConfig config)
+    {
+        _lapTimerViewModel?.ApplyConfiguration(config);
     }
 
     private void OnRelativeDataUpdated()
@@ -242,6 +266,15 @@ public partial class WidgetOverlayWindow : Window
         var widget = _standingsWidget;
         var vm = _standingsViewModel;
         Dispatcher.Invoke(() => vm.UpdateStandings(widget.GetStandings(), widget.CurrentLap, widget.TotalLaps));
+    }
+
+    private void OnLapTimerDataUpdated()
+    {
+        if (_lapTimerWidget == null || _lapTimerViewModel == null) return;
+
+        var widget = _lapTimerWidget;
+        var vm = _lapTimerViewModel;
+        Dispatcher.Invoke(() => vm.UpdateLapData(widget.GetLapTimerData()));
     }
 
     /// <summary>
@@ -343,6 +376,11 @@ public partial class WidgetOverlayWindow : Window
         if (_standingsWidget != null)
         {
             _standingsWidget.DataUpdated -= OnStandingsDataUpdated;
+        }
+
+        if (_lapTimerWidget != null)
+        {
+            _lapTimerWidget.DataUpdated -= OnLapTimerDataUpdated;
         }
 
         // Unregister from drag service

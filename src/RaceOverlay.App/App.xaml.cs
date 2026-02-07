@@ -127,6 +127,18 @@ public partial class App : Application
                 Author = "RaceOverlay Team"
             });
 
+            // Register Lap Timer Widget
+            registry.RegisterWidget(new WidgetMetadata
+            {
+                WidgetId = "lap-timer",
+                DisplayName = "Lap Timer",
+                Description = "Displays current, last, and best lap times with delta comparisons.",
+                WidgetType = typeof(LapTimerWidget),
+                ConfigurationType = typeof(LapTimerConfig),
+                Version = "1.0.0",
+                Author = "RaceOverlay Team"
+            });
+
             return registry;
         });
 
@@ -154,6 +166,11 @@ public partial class App : Application
         services.AddTransient<StandingsWidget>();
         services.AddTransient<StandingsViewModel>();
         services.AddTransient<StandingsView>();
+
+        // Lap Timer Widget
+        services.AddTransient<LapTimerWidget>();
+        services.AddTransient<LapTimerViewModel>();
+        services.AddTransient<LapTimerView>();
 
         // ViewModels
         services.AddTransient<MainWindowViewModel>();

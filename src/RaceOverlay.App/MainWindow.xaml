@@ -246,6 +246,34 @@
                             <CheckBox Content="Show Gap" IsChecked="{Binding StandingsShowGap}" Style="{StaticResource SettingsCheckBox}"/>
                         </StackPanel>
 
+                        <!-- Lap Timer Settings -->
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedWidgetId}" Value="lap-timer">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+
+                            <TextBlock Text="LAP TIMER SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
+
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
+                                <TextBox Text="{Binding LapTimerUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                            </StackPanel>
+
+                            <TextBlock Text="VISIBILITY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+
+                            <CheckBox Content="Show Delta to Best" IsChecked="{Binding LapTimerShowDeltaToBest}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Show Last Lap" IsChecked="{Binding LapTimerShowLastLap}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Show Best Lap" IsChecked="{Binding LapTimerShowBestLap}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Show Delta Last vs Best" IsChecked="{Binding LapTimerShowDeltaLastBest}" Style="{StaticResource SettingsCheckBox}"/>
+                        </StackPanel>
+
                         <!-- Input Trace Settings -->
                         <StackPanel>
                             <StackPanel.Style>
