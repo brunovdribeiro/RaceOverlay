@@ -214,6 +214,38 @@
                             <CheckBox Content="Show Clutch" IsChecked="{Binding InputsShowClutch}" Style="{StaticResource SettingsCheckBox}"/>
                         </StackPanel>
 
+                        <!-- Standings Settings -->
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedWidgetId}" Value="standings">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+
+                            <TextBlock Text="STANDINGS SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
+
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
+                                <TextBox Text="{Binding StandingsUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Max Drivers" Style="{StaticResource SettingsLabel}"/>
+                                <TextBox Text="{Binding StandingsMaxDrivers, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                            </StackPanel>
+
+                            <TextBlock Text="VISIBILITY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+
+                            <CheckBox Content="Show Class Color" IsChecked="{Binding StandingsShowClassColor}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Show Best Lap Time" IsChecked="{Binding StandingsShowBestLapTime}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Show Gap" IsChecked="{Binding StandingsShowGap}" Style="{StaticResource SettingsCheckBox}"/>
+                        </StackPanel>
+
                         <!-- Input Trace Settings -->
                         <StackPanel>
                             <StackPanel.Style>

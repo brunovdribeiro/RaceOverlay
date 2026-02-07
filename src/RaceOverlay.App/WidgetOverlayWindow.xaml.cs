@@ -25,6 +25,8 @@ public partial class WidgetOverlayWindow : Window
     private InputsViewModel? _inputsViewModel;
     private InputTraceWidget? _inputTraceWidget;
     private InputTraceViewModel? _inputTraceViewModel;
+    private StandingsWidget? _standingsWidget;
+    private StandingsViewModel? _standingsViewModel;
 
     public static readonly DependencyProperty WidgetProperty =
         DependencyProperty.Register(nameof(Widget), typeof(IWidget), typeof(WidgetOverlayWindow));
@@ -144,6 +146,23 @@ public partial class WidgetOverlayWindow : Window
 
             inputTraceWidget.DataUpdated += OnInputTraceDataUpdated;
         }
+        else if (Widget is StandingsWidget standingsWidget)
+        {
+            _standingsWidget = standingsWidget;
+            var view = new StandingsView();
+            _standingsViewModel = new StandingsViewModel();
+
+            if (standingsWidget.Configuration is IStandingsConfig config)
+            {
+                _standingsViewModel.ApplyConfiguration(config);
+            }
+
+            _standingsViewModel.UpdateStandings(standingsWidget.GetStandings(), standingsWidget.CurrentLap, standingsWidget.TotalLaps);
+            view.DataContext = _standingsViewModel;
+            WidgetContent.Content = view;
+
+            standingsWidget.DataUpdated += OnStandingsDataUpdated;
+        }
 
         // Register this window for drag management
         WidgetDragService.Instance.RegisterWindow(this);
@@ -173,6 +192,11 @@ public partial class WidgetOverlayWindow : Window
     public void ApplyInputTraceConfig(IInputTraceConfig config)
     {
         _inputTraceViewModel?.ApplyConfiguration(config);
+    }
+
+    public void ApplyStandingsConfig(IStandingsConfig config)
+    {
+        _standingsViewModel?.ApplyConfiguration(config);
     }
 
     private void OnRelativeDataUpdated()
@@ -209,6 +233,15 @@ public partial class WidgetOverlayWindow : Window
         var widget = _inputTraceWidget;
         var vm = _inputTraceViewModel;
         Dispatcher.Invoke(() => vm.UpdateTrace(widget.GetTraceHistory()));
+    }
+
+    private void OnStandingsDataUpdated()
+    {
+        if (_standingsWidget == null || _standingsViewModel == null) return;
+
+        var widget = _standingsWidget;
+        var vm = _standingsViewModel;
+        Dispatcher.Invoke(() => vm.UpdateStandings(widget.GetStandings(), widget.CurrentLap, widget.TotalLaps));
     }
 
     /// <summary>
@@ -305,6 +338,11 @@ public partial class WidgetOverlayWindow : Window
         if (_inputTraceWidget != null)
         {
             _inputTraceWidget.DataUpdated -= OnInputTraceDataUpdated;
+        }
+
+        if (_standingsWidget != null)
+        {
+            _standingsWidget.DataUpdated -= OnStandingsDataUpdated;
         }
 
         // Unregister from drag service

@@ -87,6 +87,22 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private bool inputsShowClutch = false;
 
+    // Standings settings
+    [ObservableProperty]
+    private int standingsUpdateIntervalMs = 500;
+
+    [ObservableProperty]
+    private bool standingsShowClassColor = true;
+
+    [ObservableProperty]
+    private bool standingsShowBestLapTime = true;
+
+    [ObservableProperty]
+    private bool standingsShowGap = true;
+
+    [ObservableProperty]
+    private int standingsMaxDrivers = 20;
+
     // Input Trace settings
     [ObservableProperty]
     private int inputTraceUpdateIntervalMs = 16;
@@ -190,6 +206,27 @@ public partial class MainWindowViewModel : ObservableObject
                 }
             }
         }
+        else if (value.WidgetId == "standings")
+        {
+            if (_savedConfigs.TryGetValue(value.WidgetId, out var saved) && saved is IStandingsConfig standingsConfig)
+            {
+                LoadConfigFromStandingsWidget(standingsConfig);
+            }
+            else
+            {
+                var activeInstance = _activeWidgets.Values
+                    .FirstOrDefault(w => w.WidgetId == value.WidgetId);
+
+                if (activeInstance?.Configuration is IStandingsConfig config)
+                {
+                    LoadConfigFromStandingsWidget(config);
+                }
+                else
+                {
+                    LoadConfigFromStandingsWidget(new StandingsConfig());
+                }
+            }
+        }
         else
         {
             // Relative Overlay or other widgets
@@ -254,6 +291,16 @@ public partial class MainWindowViewModel : ObservableObject
         UpdatePositionText(config.OverlayLeft, config.OverlayTop);
     }
 
+    private void LoadConfigFromStandingsWidget(IStandingsConfig config)
+    {
+        StandingsUpdateIntervalMs = config.UpdateIntervalMs;
+        StandingsShowClassColor = config.ShowClassColor;
+        StandingsShowBestLapTime = config.ShowBestLapTime;
+        StandingsShowGap = config.ShowGap;
+        StandingsMaxDrivers = config.MaxDrivers;
+        UpdatePositionText(config.OverlayLeft, config.OverlayTop);
+    }
+
     // Push config changes to active widget instances when toggles change
     partial void OnShowPositionChanged(bool value) => PushRelativeConfigToActiveWidgets();
     partial void OnShowClassColorChanged(bool value) => PushRelativeConfigToActiveWidgets();
@@ -278,6 +325,12 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnInputTraceThrottleColorChanged(string value) => PushInputTraceConfigToActiveWidgets();
     partial void OnInputTraceBrakeColorChanged(string value) => PushInputTraceConfigToActiveWidgets();
     partial void OnInputTraceHistorySecondsChanged(int value) => PushInputTraceConfigToActiveWidgets();
+
+    partial void OnStandingsUpdateIntervalMsChanged(int value) => PushStandingsConfigToActiveWidgets();
+    partial void OnStandingsShowClassColorChanged(bool value) => PushStandingsConfigToActiveWidgets();
+    partial void OnStandingsShowBestLapTimeChanged(bool value) => PushStandingsConfigToActiveWidgets();
+    partial void OnStandingsShowGapChanged(bool value) => PushStandingsConfigToActiveWidgets();
+    partial void OnStandingsMaxDriversChanged(int value) => PushStandingsConfigToActiveWidgets();
 
     private void PushRelativeConfigToActiveWidgets()
     {
@@ -407,6 +460,47 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
+    private void PushStandingsConfigToActiveWidgets()
+    {
+        if (SelectedWidget == null || SelectedWidgetId != "standings") return;
+
+        double left = double.NaN, top = double.NaN;
+        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing) && existing is StandingsConfig existingStandings)
+        {
+            left = existingStandings.OverlayLeft;
+            top = existingStandings.OverlayTop;
+        }
+
+        var config = new StandingsConfig
+        {
+            UpdateIntervalMs = StandingsUpdateIntervalMs,
+            ShowClassColor = StandingsShowClassColor,
+            ShowBestLapTime = StandingsShowBestLapTime,
+            ShowGap = StandingsShowGap,
+            MaxDrivers = StandingsMaxDrivers,
+            OverlayLeft = left,
+            OverlayTop = top
+        };
+
+        _savedConfigs[SelectedWidget.WidgetId] = config;
+
+        foreach (var kv in _activeWidgets)
+        {
+            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            {
+                kv.Value.UpdateConfiguration(config);
+            }
+        }
+
+        foreach (var kv in _activeWindows)
+        {
+            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            {
+                kv.Value.ApplyStandingsConfig(config);
+            }
+        }
+    }
+
     private void PushFuelConfigToActiveWidgets()
     {
         if (SelectedWidget == null || SelectedWidgetId != "fuel-calculator") return;
@@ -474,6 +568,11 @@ public partial class MainWindowViewModel : ObservableObject
                 inputTraceConfig.OverlayLeft = left;
                 inputTraceConfig.OverlayTop = top;
             }
+            else if (config is StandingsConfig standingsConfig)
+            {
+                standingsConfig.OverlayLeft = left;
+                standingsConfig.OverlayTop = top;
+            }
         }
         else
         {
@@ -488,6 +587,10 @@ public partial class MainWindowViewModel : ObservableObject
             else if (widgetId == "input-trace")
             {
                 _savedConfigs[widgetId] = new InputTraceConfig { OverlayLeft = left, OverlayTop = top };
+            }
+            else if (widgetId == "standings")
+            {
+                _savedConfigs[widgetId] = new StandingsConfig { OverlayLeft = left, OverlayTop = top };
             }
             else
             {
@@ -600,6 +703,11 @@ public partial class MainWindowViewModel : ObservableObject
             {
                 savedLeft = inputTraceConfig.OverlayLeft;
                 savedTop = inputTraceConfig.OverlayTop;
+            }
+            else if (savedConfig is StandingsConfig standingsConfig)
+            {
+                savedLeft = standingsConfig.OverlayLeft;
+                savedTop = standingsConfig.OverlayTop;
             }
 
             if (!double.IsNaN(savedLeft) && !double.IsNaN(savedTop))

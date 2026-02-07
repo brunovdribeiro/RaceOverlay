@@ -115,6 +115,18 @@ public partial class App : Application
                 Author = "RaceOverlay Team"
             });
 
+            // Register Standings Widget
+            registry.RegisterWidget(new WidgetMetadata
+            {
+                WidgetId = "standings",
+                DisplayName = "Standings",
+                Description = "Full race leaderboard showing all drivers sorted by position with gaps, class colors, and player highlighting.",
+                WidgetType = typeof(StandingsWidget),
+                ConfigurationType = typeof(StandingsConfig),
+                Version = "1.0.0",
+                Author = "RaceOverlay Team"
+            });
+
             return registry;
         });
 
@@ -137,6 +149,11 @@ public partial class App : Application
         services.AddTransient<InputTraceWidget>();
         services.AddTransient<InputTraceViewModel>();
         services.AddTransient<InputTraceView>();
+
+        // Standings Widget
+        services.AddTransient<StandingsWidget>();
+        services.AddTransient<StandingsViewModel>();
+        services.AddTransient<StandingsView>();
 
         // ViewModels
         services.AddTransient<MainWindowViewModel>();
