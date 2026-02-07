@@ -139,6 +139,18 @@ public partial class App : Application
                 Author = "RaceOverlay Team"
             });
 
+            // Register Track Map Widget
+            registry.RegisterWidget(new WidgetMetadata
+            {
+                WidgetId = "track-map",
+                DisplayName = "Track Map",
+                Description = "Minimap showing the track outline with colored dots for each car's position.",
+                WidgetType = typeof(TrackMapWidget),
+                ConfigurationType = typeof(TrackMapConfig),
+                Version = "1.0.0",
+                Author = "RaceOverlay Team"
+            });
+
             return registry;
         });
 
@@ -171,6 +183,11 @@ public partial class App : Application
         services.AddTransient<LapTimerWidget>();
         services.AddTransient<LapTimerViewModel>();
         services.AddTransient<LapTimerView>();
+
+        // Track Map Widget
+        services.AddTransient<TrackMapWidget>();
+        services.AddTransient<TrackMapViewModel>();
+        services.AddTransient<TrackMapView>();
 
         // ViewModels
         services.AddTransient<MainWindowViewModel>();

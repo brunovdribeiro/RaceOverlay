@@ -29,6 +29,8 @@ public partial class WidgetOverlayWindow : Window
     private StandingsViewModel? _standingsViewModel;
     private LapTimerWidget? _lapTimerWidget;
     private LapTimerViewModel? _lapTimerViewModel;
+    private TrackMapWidget? _trackMapWidget;
+    private TrackMapViewModel? _trackMapViewModel;
 
     public static readonly DependencyProperty WidgetProperty =
         DependencyProperty.Register(nameof(Widget), typeof(IWidget), typeof(WidgetOverlayWindow));
@@ -182,6 +184,25 @@ public partial class WidgetOverlayWindow : Window
 
             lapTimerWidget.DataUpdated += OnLapTimerDataUpdated;
         }
+        else if (Widget is TrackMapWidget trackMapWidget)
+        {
+            _trackMapWidget = trackMapWidget;
+            var view = new TrackMapView();
+            _trackMapViewModel = new TrackMapViewModel();
+
+            if (trackMapWidget.Configuration is ITrackMapConfig config)
+            {
+                _trackMapViewModel.ApplyConfiguration(config);
+            }
+
+            _trackMapViewModel.TrackOutline = trackMapWidget.GetTrackOutline();
+            var data = trackMapWidget.GetTrackMapData();
+            _trackMapViewModel.UpdateMap(data.Drivers, data.CurrentLap, data.TotalLaps);
+            view.DataContext = _trackMapViewModel;
+            WidgetContent.Content = view;
+
+            trackMapWidget.DataUpdated += OnTrackMapDataUpdated;
+        }
 
         // Register this window for drag management
         WidgetDragService.Instance.RegisterWindow(this);
@@ -221,6 +242,11 @@ public partial class WidgetOverlayWindow : Window
     public void ApplyLapTimerConfig(ILapTimerConfig config)
     {
         _lapTimerViewModel?.ApplyConfiguration(config);
+    }
+
+    public void ApplyTrackMapConfig(ITrackMapConfig config)
+    {
+        _trackMapViewModel?.ApplyConfiguration(config);
     }
 
     private void OnRelativeDataUpdated()
@@ -275,6 +301,16 @@ public partial class WidgetOverlayWindow : Window
         var widget = _lapTimerWidget;
         var vm = _lapTimerViewModel;
         Dispatcher.Invoke(() => vm.UpdateLapData(widget.GetLapTimerData()));
+    }
+
+    private void OnTrackMapDataUpdated()
+    {
+        if (_trackMapWidget == null || _trackMapViewModel == null) return;
+
+        var widget = _trackMapWidget;
+        var vm = _trackMapViewModel;
+        var data = widget.GetTrackMapData();
+        Dispatcher.Invoke(() => vm.UpdateMap(data.Drivers, data.CurrentLap, data.TotalLaps));
     }
 
     /// <summary>
@@ -381,6 +417,11 @@ public partial class WidgetOverlayWindow : Window
         if (_lapTimerWidget != null)
         {
             _lapTimerWidget.DataUpdated -= OnLapTimerDataUpdated;
+        }
+
+        if (_trackMapWidget != null)
+        {
+            _trackMapWidget.DataUpdated -= OnTrackMapDataUpdated;
         }
 
         // Unregister from drag service

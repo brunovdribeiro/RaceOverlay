@@ -119,6 +119,16 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private bool lapTimerShowDeltaLastBest = true;
 
+    // Track Map settings
+    [ObservableProperty]
+    private int trackMapUpdateIntervalMs = 50;
+
+    [ObservableProperty]
+    private bool trackMapShowDriverNames = false;
+
+    [ObservableProperty]
+    private bool trackMapShowPitStatus = true;
+
     // Input Trace settings
     [ObservableProperty]
     private int inputTraceUpdateIntervalMs = 16;
@@ -264,6 +274,27 @@ public partial class MainWindowViewModel : ObservableObject
                 }
             }
         }
+        else if (value.WidgetId == "track-map")
+        {
+            if (_savedConfigs.TryGetValue(value.WidgetId, out var saved) && saved is ITrackMapConfig trackMapConfig)
+            {
+                LoadConfigFromTrackMapWidget(trackMapConfig);
+            }
+            else
+            {
+                var activeInstance = _activeWidgets.Values
+                    .FirstOrDefault(w => w.WidgetId == value.WidgetId);
+
+                if (activeInstance?.Configuration is ITrackMapConfig config)
+                {
+                    LoadConfigFromTrackMapWidget(config);
+                }
+                else
+                {
+                    LoadConfigFromTrackMapWidget(new TrackMapConfig());
+                }
+            }
+        }
         else
         {
             // Relative Overlay or other widgets
@@ -348,6 +379,14 @@ public partial class MainWindowViewModel : ObservableObject
         UpdatePositionText(config.OverlayLeft, config.OverlayTop);
     }
 
+    private void LoadConfigFromTrackMapWidget(ITrackMapConfig config)
+    {
+        TrackMapUpdateIntervalMs = config.UpdateIntervalMs;
+        TrackMapShowDriverNames = config.ShowDriverNames;
+        TrackMapShowPitStatus = config.ShowPitStatus;
+        UpdatePositionText(config.OverlayLeft, config.OverlayTop);
+    }
+
     // Push config changes to active widget instances when toggles change
     partial void OnShowPositionChanged(bool value) => PushRelativeConfigToActiveWidgets();
     partial void OnShowClassColorChanged(bool value) => PushRelativeConfigToActiveWidgets();
@@ -384,6 +423,10 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnLapTimerShowLastLapChanged(bool value) => PushLapTimerConfigToActiveWidgets();
     partial void OnLapTimerShowBestLapChanged(bool value) => PushLapTimerConfigToActiveWidgets();
     partial void OnLapTimerShowDeltaLastBestChanged(bool value) => PushLapTimerConfigToActiveWidgets();
+
+    partial void OnTrackMapUpdateIntervalMsChanged(int value) => PushTrackMapConfigToActiveWidgets();
+    partial void OnTrackMapShowDriverNamesChanged(bool value) => PushTrackMapConfigToActiveWidgets();
+    partial void OnTrackMapShowPitStatusChanged(bool value) => PushTrackMapConfigToActiveWidgets();
 
     private void PushRelativeConfigToActiveWidgets()
     {
@@ -595,6 +638,45 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
+    private void PushTrackMapConfigToActiveWidgets()
+    {
+        if (SelectedWidget == null || SelectedWidgetId != "track-map") return;
+
+        double left = double.NaN, top = double.NaN;
+        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing) && existing is TrackMapConfig existingTrackMap)
+        {
+            left = existingTrackMap.OverlayLeft;
+            top = existingTrackMap.OverlayTop;
+        }
+
+        var config = new TrackMapConfig
+        {
+            UpdateIntervalMs = TrackMapUpdateIntervalMs,
+            ShowDriverNames = TrackMapShowDriverNames,
+            ShowPitStatus = TrackMapShowPitStatus,
+            OverlayLeft = left,
+            OverlayTop = top
+        };
+
+        _savedConfigs[SelectedWidget.WidgetId] = config;
+
+        foreach (var kv in _activeWidgets)
+        {
+            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            {
+                kv.Value.UpdateConfiguration(config);
+            }
+        }
+
+        foreach (var kv in _activeWindows)
+        {
+            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            {
+                kv.Value.ApplyTrackMapConfig(config);
+            }
+        }
+    }
+
     private void PushFuelConfigToActiveWidgets()
     {
         if (SelectedWidget == null || SelectedWidgetId != "fuel-calculator") return;
@@ -672,6 +754,11 @@ public partial class MainWindowViewModel : ObservableObject
                 lapTimerConfig.OverlayLeft = left;
                 lapTimerConfig.OverlayTop = top;
             }
+            else if (config is TrackMapConfig trackMapConfig)
+            {
+                trackMapConfig.OverlayLeft = left;
+                trackMapConfig.OverlayTop = top;
+            }
         }
         else
         {
@@ -694,6 +781,10 @@ public partial class MainWindowViewModel : ObservableObject
             else if (widgetId == "lap-timer")
             {
                 _savedConfigs[widgetId] = new LapTimerConfig { OverlayLeft = left, OverlayTop = top };
+            }
+            else if (widgetId == "track-map")
+            {
+                _savedConfigs[widgetId] = new TrackMapConfig { OverlayLeft = left, OverlayTop = top };
             }
             else
             {
@@ -816,6 +907,11 @@ public partial class MainWindowViewModel : ObservableObject
             {
                 savedLeft = lapTimerConfig.OverlayLeft;
                 savedTop = lapTimerConfig.OverlayTop;
+            }
+            else if (savedConfig is TrackMapConfig trackMapConfig)
+            {
+                savedLeft = trackMapConfig.OverlayLeft;
+                savedTop = trackMapConfig.OverlayTop;
             }
 
             if (!double.IsNaN(savedLeft) && !double.IsNaN(savedTop))
