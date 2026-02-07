@@ -18,7 +18,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IServiceProvider _serviceProvider;
     private readonly Dictionary<string, IWidget> _activeWidgets = new();
     private readonly Dictionary<string, WidgetOverlayWindow> _activeWindows = new();
-    private readonly Dictionary<string, RelativeOverlayConfig> _savedConfigs = new();
+    private readonly Dictionary<string, IWidgetConfiguration> _savedConfigs = new();
 
     [ObservableProperty]
     private WidgetMetadata? selectedWidget;
@@ -29,7 +29,10 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private bool isWidgetSelected;
 
-    // Column visibility toggles
+    [ObservableProperty]
+    private string selectedWidgetId = "";
+
+    // Column visibility toggles (Relative Overlay)
     [ObservableProperty]
     private bool showPosition = true;
 
@@ -54,7 +57,7 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private string overlayPositionText = "Not set";
 
-    // Data settings
+    // Data settings (Relative Overlay)
     [ObservableProperty]
     private int driversAhead = 3;
 
@@ -63,6 +66,10 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     private int updateIntervalMs = 500;
+
+    // Fuel Calculator settings
+    [ObservableProperty]
+    private double fuelTankCapacity = 110.0;
 
     /// <summary>
     /// Initializes a new instance of the MainWindowViewModel.
@@ -84,34 +91,59 @@ public partial class MainWindowViewModel : ObservableObject
         if (value == null)
         {
             IsWidgetSelected = false;
+            SelectedWidgetId = "";
             return;
         }
 
         IsWidgetSelected = true;
+        SelectedWidgetId = value.WidgetId;
 
-        // Priority: saved config > active instance > defaults
-        if (_savedConfigs.TryGetValue(value.WidgetId, out var savedConfig))
+        if (value.WidgetId == "fuel-calculator")
         {
-            LoadConfigFromWidget(savedConfig);
-        }
-        else
-        {
-            var activeInstance = _activeWidgets.Values
-                .FirstOrDefault(w => w.WidgetId == value.WidgetId);
-
-            if (activeInstance?.Configuration is IRelativeOverlayConfig config)
+            if (_savedConfigs.TryGetValue(value.WidgetId, out var saved) && saved is IFuelCalculatorConfig fuelConfig)
             {
-                LoadConfigFromWidget(config);
+                LoadConfigFromFuelWidget(fuelConfig);
             }
             else
             {
-                var defaults = new RelativeOverlayConfig();
-                LoadConfigFromWidget(defaults);
+                var activeInstance = _activeWidgets.Values
+                    .FirstOrDefault(w => w.WidgetId == value.WidgetId);
+
+                if (activeInstance?.Configuration is IFuelCalculatorConfig config)
+                {
+                    LoadConfigFromFuelWidget(config);
+                }
+                else
+                {
+                    LoadConfigFromFuelWidget(new FuelCalculatorConfig());
+                }
+            }
+        }
+        else
+        {
+            // Relative Overlay or other widgets
+            if (_savedConfigs.TryGetValue(value.WidgetId, out var saved) && saved is IRelativeOverlayConfig relConfig)
+            {
+                LoadConfigFromRelativeWidget(relConfig);
+            }
+            else
+            {
+                var activeInstance = _activeWidgets.Values
+                    .FirstOrDefault(w => w.WidgetId == value.WidgetId);
+
+                if (activeInstance?.Configuration is IRelativeOverlayConfig config)
+                {
+                    LoadConfigFromRelativeWidget(config);
+                }
+                else
+                {
+                    LoadConfigFromRelativeWidget(new RelativeOverlayConfig());
+                }
             }
         }
     }
 
-    private void LoadConfigFromWidget(IRelativeOverlayConfig config)
+    private void LoadConfigFromRelativeWidget(IRelativeOverlayConfig config)
     {
         ShowPosition = config.ShowPosition;
         ShowClassColor = config.ShowClassColor;
@@ -126,28 +158,36 @@ public partial class MainWindowViewModel : ObservableObject
         UpdatePositionText(config.OverlayLeft, config.OverlayTop);
     }
 
-    // Push config changes to active widget instances when toggles change
-    partial void OnShowPositionChanged(bool value) => PushConfigToActiveWidgets();
-    partial void OnShowClassColorChanged(bool value) => PushConfigToActiveWidgets();
-    partial void OnShowDriverNameChanged(bool value) => PushConfigToActiveWidgets();
-    partial void OnShowRatingChanged(bool value) => PushConfigToActiveWidgets();
-    partial void OnShowStintChanged(bool value) => PushConfigToActiveWidgets();
-    partial void OnShowLapTimeChanged(bool value) => PushConfigToActiveWidgets();
-    partial void OnShowGapChanged(bool value) => PushConfigToActiveWidgets();
-    partial void OnDriversAheadChanged(int value) => PushConfigToActiveWidgets();
-    partial void OnDriversBehindChanged(int value) => PushConfigToActiveWidgets();
-    partial void OnUpdateIntervalMsChanged(int value) => PushConfigToActiveWidgets();
-
-    private void PushConfigToActiveWidgets()
+    private void LoadConfigFromFuelWidget(IFuelCalculatorConfig config)
     {
-        if (SelectedWidget == null) return;
+        FuelTankCapacity = config.FuelTankCapacity;
+        UpdatePositionText(config.OverlayLeft, config.OverlayTop);
+    }
+
+    // Push config changes to active widget instances when toggles change
+    partial void OnShowPositionChanged(bool value) => PushRelativeConfigToActiveWidgets();
+    partial void OnShowClassColorChanged(bool value) => PushRelativeConfigToActiveWidgets();
+    partial void OnShowDriverNameChanged(bool value) => PushRelativeConfigToActiveWidgets();
+    partial void OnShowRatingChanged(bool value) => PushRelativeConfigToActiveWidgets();
+    partial void OnShowStintChanged(bool value) => PushRelativeConfigToActiveWidgets();
+    partial void OnShowLapTimeChanged(bool value) => PushRelativeConfigToActiveWidgets();
+    partial void OnShowGapChanged(bool value) => PushRelativeConfigToActiveWidgets();
+    partial void OnDriversAheadChanged(int value) => PushRelativeConfigToActiveWidgets();
+    partial void OnDriversBehindChanged(int value) => PushRelativeConfigToActiveWidgets();
+    partial void OnUpdateIntervalMsChanged(int value) => PushRelativeConfigToActiveWidgets();
+
+    partial void OnFuelTankCapacityChanged(double value) => PushFuelConfigToActiveWidgets();
+
+    private void PushRelativeConfigToActiveWidgets()
+    {
+        if (SelectedWidget == null || SelectedWidgetId != "relative-overlay") return;
 
         // Preserve saved position if it exists
         double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing))
+        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing) && existing is RelativeOverlayConfig existingRel)
         {
-            left = existing.OverlayLeft;
-            top = existing.OverlayTop;
+            left = existingRel.OverlayLeft;
+            top = existingRel.OverlayTop;
         }
 
         var config = new RelativeOverlayConfig
@@ -166,10 +206,8 @@ public partial class MainWindowViewModel : ObservableObject
             OverlayTop = top
         };
 
-        // Save snapshot
         _savedConfigs[SelectedWidget.WidgetId] = config;
 
-        // Push to all active widget instances of this type
         foreach (var kv in _activeWidgets)
         {
             if (kv.Key.StartsWith(SelectedWidget.WidgetId))
@@ -178,12 +216,48 @@ public partial class MainWindowViewModel : ObservableObject
             }
         }
 
-        // Also push column visibility to overlay view models
         foreach (var kv in _activeWindows)
         {
             if (kv.Key.StartsWith(SelectedWidget.WidgetId))
             {
                 kv.Value.ApplyColumnVisibility(config);
+            }
+        }
+    }
+
+    private void PushFuelConfigToActiveWidgets()
+    {
+        if (SelectedWidget == null || SelectedWidgetId != "fuel-calculator") return;
+
+        double left = double.NaN, top = double.NaN;
+        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing) && existing is FuelCalculatorConfig existingFuel)
+        {
+            left = existingFuel.OverlayLeft;
+            top = existingFuel.OverlayTop;
+        }
+
+        var config = new FuelCalculatorConfig
+        {
+            FuelTankCapacity = FuelTankCapacity,
+            OverlayLeft = left,
+            OverlayTop = top
+        };
+
+        _savedConfigs[SelectedWidget.WidgetId] = config;
+
+        foreach (var kv in _activeWidgets)
+        {
+            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            {
+                kv.Value.UpdateConfiguration(config);
+            }
+        }
+
+        foreach (var kv in _activeWindows)
+        {
+            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            {
+                kv.Value.ApplyFuelConfig(config);
             }
         }
     }
@@ -198,16 +272,29 @@ public partial class MainWindowViewModel : ObservableObject
 
         if (_savedConfigs.TryGetValue(widgetId, out var config))
         {
-            config.OverlayLeft = left;
-            config.OverlayTop = top;
+            if (config is RelativeOverlayConfig relConfig)
+            {
+                relConfig.OverlayLeft = left;
+                relConfig.OverlayTop = top;
+            }
+            else if (config is FuelCalculatorConfig fuelConfig)
+            {
+                fuelConfig.OverlayLeft = left;
+                fuelConfig.OverlayTop = top;
+            }
         }
         else
         {
-            var newConfig = new RelativeOverlayConfig { OverlayLeft = left, OverlayTop = top };
-            _savedConfigs[widgetId] = newConfig;
+            if (widgetId == "fuel-calculator")
+            {
+                _savedConfigs[widgetId] = new FuelCalculatorConfig { OverlayLeft = left, OverlayTop = top };
+            }
+            else
+            {
+                _savedConfigs[widgetId] = new RelativeOverlayConfig { OverlayLeft = left, OverlayTop = top };
+            }
         }
 
-        // Update position text if this widget is currently selected
         if (SelectedWidget?.WidgetId == widgetId)
         {
             UpdatePositionText(left, top);
@@ -291,14 +378,25 @@ public partial class MainWindowViewModel : ObservableObject
         // Restore saved position if available
         if (_savedConfigs.TryGetValue(widget.WidgetId, out var savedConfig))
         {
-            // Push saved config to the new widget instance
             widget.UpdateConfiguration(savedConfig);
 
-            if (!double.IsNaN(savedConfig.OverlayLeft) && !double.IsNaN(savedConfig.OverlayTop))
+            double savedLeft = double.NaN, savedTop = double.NaN;
+            if (savedConfig is RelativeOverlayConfig relConfig)
+            {
+                savedLeft = relConfig.OverlayLeft;
+                savedTop = relConfig.OverlayTop;
+            }
+            else if (savedConfig is FuelCalculatorConfig fuelConfig)
+            {
+                savedLeft = fuelConfig.OverlayLeft;
+                savedTop = fuelConfig.OverlayTop;
+            }
+
+            if (!double.IsNaN(savedLeft) && !double.IsNaN(savedTop))
             {
                 overlayWindow.WindowStartupLocation = System.Windows.WindowStartupLocation.Manual;
-                overlayWindow.Left = savedConfig.OverlayLeft;
-                overlayWindow.Top = savedConfig.OverlayTop;
+                overlayWindow.Left = savedLeft;
+                overlayWindow.Top = savedTop;
             }
         }
 

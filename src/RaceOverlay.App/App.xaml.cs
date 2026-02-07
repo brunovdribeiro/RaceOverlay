@@ -79,6 +79,18 @@ public partial class App : Application
                 Author = "RaceOverlay Team"
             });
 
+            // Register Fuel Calculator Widget
+            registry.RegisterWidget(new WidgetMetadata
+            {
+                WidgetId = "fuel-calculator",
+                DisplayName = "Fuel Calculator",
+                Description = "Tracks fuel remaining, consumption rate, and calculates fuel needed for pit stops.",
+                WidgetType = typeof(FuelCalculator),
+                ConfigurationType = typeof(FuelCalculatorConfig),
+                Version = "1.0.0",
+                Author = "RaceOverlay Team"
+            });
+
             return registry;
         });
 
@@ -86,6 +98,11 @@ public partial class App : Application
         services.AddTransient<RelativeOverlay>();
         services.AddTransient<RelativeOverlayViewModel>();
         services.AddTransient<RelativeOverlayView>();
+
+        // Fuel Calculator Widget
+        services.AddTransient<FuelCalculator>();
+        services.AddTransient<FuelCalculatorViewModel>();
+        services.AddTransient<FuelCalculatorView>();
 
         // ViewModels
         services.AddTransient<MainWindowViewModel>();

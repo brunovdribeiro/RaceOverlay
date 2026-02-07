@@ -1,0 +1,139 @@
+<UserControl x:Class="RaceOverlay.Engine.Views.FuelCalculatorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:conv="clr-namespace:RaceOverlay.Engine.Converters"
+             mc:Ignorable="d"
+             d:DesignHeight="300" d:DesignWidth="280"
+             Background="{DynamicResource RO.BackgroundBrush}"
+             Foreground="{DynamicResource RO.ForegroundBrush}">
+
+    <UserControl.Resources>
+        <conv:FuelLevelConverter x:Key="FuelLevelConv"/>
+        <conv:GreaterThanZeroConverter x:Key="GtZeroConv"/>
+        <conv:FuelBarWidthConverter x:Key="BarWidthConv"/>
+
+        <Style x:Key="FuelLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource RO.MutedBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="FuelValue" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource RO.ForegroundBrush}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource RO.BackgroundBrush}"
+            BorderBrush="{DynamicResource RO.BorderBrush}"
+            BorderThickness="1" CornerRadius="4" Padding="12">
+        <StackPanel>
+            <!-- Header -->
+            <TextBlock Text="FUEL CALCULATOR" FontSize="11" FontWeight="Bold"
+                       Foreground="{DynamicResource RO.MutedBrush}" Margin="0,0,0,8"/>
+
+            <Border Background="{DynamicResource RO.BorderBrush}" Height="1" Margin="0,0,0,10"/>
+
+            <!-- Fuel Bar -->
+            <Grid Margin="0,0,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Background="{DynamicResource RO.SurfaceBrush}"
+                        CornerRadius="3" Height="18" Margin="0,0,8,0"
+                        Name="FuelBarContainer">
+                    <Border CornerRadius="3" HorizontalAlignment="Left"
+                            Name="FuelBar" Height="18">
+                        <Border.Width>
+                            <MultiBinding Converter="{StaticResource BarWidthConv}">
+                                <Binding Path="FuelRemainingPercent"/>
+                                <Binding Path="ActualWidth" ElementName="FuelBarContainer"/>
+                            </MultiBinding>
+                        </Border.Width>
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#22C55E"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding FuelRemainingPercent, Converter={StaticResource FuelLevelConv}, ConverterParameter=red}" Value="True">
+                                        <Setter Property="Background" Value="#EF4444"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding FuelRemainingPercent, Converter={StaticResource FuelLevelConv}, ConverterParameter=yellow}" Value="True">
+                                        <Setter Property="Background" Value="#EAB308"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                    </Border>
+                </Border>
+
+                <TextBlock Grid.Column="1" Text="{Binding FuelRemainingPercent, StringFormat={}{0:F1}%}"
+                           FontSize="11" FontWeight="Bold" Foreground="{DynamicResource RO.ForegroundBrush}"
+                           VerticalAlignment="Center" MinWidth="42" TextAlignment="Right"/>
+            </Grid>
+
+            <!-- Data Rows -->
+            <Grid Margin="0,6,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="26"/>
+                    <RowDefinition Height="26"/>
+                    <RowDefinition Height="26"/>
+                    <RowDefinition Height="26"/>
+                    <RowDefinition Height="26"/>
+                    <RowDefinition Height="26"/>
+                </Grid.RowDefinitions>
+
+                <!-- Remaining -->
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Remaining" Style="{StaticResource FuelLabel}"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Style="{StaticResource FuelValue}"
+                           Text="{Binding FuelRemaining, StringFormat={}{0:F1} L}"/>
+
+                <!-- Per Lap -->
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Per Lap" Style="{StaticResource FuelLabel}"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource FuelValue}"
+                           Text="{Binding FuelPerLap, StringFormat={}{0:F1} L}"/>
+
+                <!-- Laps of Fuel -->
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Laps of Fuel" Style="{StaticResource FuelLabel}"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource FuelValue}"
+                           Text="{Binding FuelRemainingLaps, StringFormat={}{0:F1}}"/>
+
+                <!-- Laps Left -->
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Laps Left" Style="{StaticResource FuelLabel}"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" Style="{StaticResource FuelValue}"
+                           Text="{Binding LapsRemaining}"/>
+
+                <!-- To Finish -->
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="To Finish" Style="{StaticResource FuelLabel}"/>
+                <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource FuelValue}"
+                           Text="{Binding FuelToFinish, StringFormat={}{0:F1} L}"/>
+
+                <!-- To Add -->
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="To Add" Style="{StaticResource FuelLabel}"/>
+                <TextBlock Grid.Row="5" Grid.Column="1"
+                           Text="{Binding FuelToAdd, StringFormat={}{0:F1} L}"
+                           FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{DynamicResource RO.ForegroundBrush}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding FuelToAdd, Converter={StaticResource GtZeroConv}}" Value="True">
+                                    <Setter Property="Foreground" Value="{DynamicResource RO.MagentaBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>

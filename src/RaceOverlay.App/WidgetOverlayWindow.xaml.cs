@@ -19,6 +19,8 @@ public partial class WidgetOverlayWindow : Window
     private bool _isDraggingEnabled;
     private RelativeOverlay? _relativeOverlay;
     private RelativeOverlayViewModel? _viewModel;
+    private FuelCalculator? _fuelCalculator;
+    private FuelCalculatorViewModel? _fuelCalcViewModel;
 
     public static readonly DependencyProperty WidgetProperty =
         DependencyProperty.Register(nameof(Widget), typeof(IWidget), typeof(WidgetOverlayWindow));
@@ -85,7 +87,24 @@ public partial class WidgetOverlayWindow : Window
             WidgetContent.Content = view;
 
             // Subscribe to data updates from the widget's update loop
-            relativeOverlay.DataUpdated += OnDataUpdated;
+            relativeOverlay.DataUpdated += OnRelativeDataUpdated;
+        }
+        else if (Widget is FuelCalculator fuelCalc)
+        {
+            _fuelCalculator = fuelCalc;
+            var view = new FuelCalculatorView();
+            _fuelCalcViewModel = new FuelCalculatorViewModel();
+
+            if (fuelCalc.Configuration is IFuelCalculatorConfig config)
+            {
+                _fuelCalcViewModel.ApplyConfiguration(config);
+            }
+
+            _fuelCalcViewModel.UpdateFuelData(fuelCalc.GetFuelData());
+            view.DataContext = _fuelCalcViewModel;
+            WidgetContent.Content = view;
+
+            fuelCalc.DataUpdated += OnFuelDataUpdated;
         }
 
         // Register this window for drag management
@@ -103,13 +122,27 @@ public partial class WidgetOverlayWindow : Window
         _viewModel?.ApplyConfiguration(config);
     }
 
-    private void OnDataUpdated()
+    public void ApplyFuelConfig(IFuelCalculatorConfig config)
+    {
+        _fuelCalcViewModel?.ApplyConfiguration(config);
+    }
+
+    private void OnRelativeDataUpdated()
     {
         if (_relativeOverlay == null || _viewModel == null) return;
 
         var overlay = _relativeOverlay;
         var vm = _viewModel;
         Dispatcher.Invoke(() => vm.RefreshDrivers(overlay.GetRelativeDrivers()));
+    }
+
+    private void OnFuelDataUpdated()
+    {
+        if (_fuelCalculator == null || _fuelCalcViewModel == null) return;
+
+        var calc = _fuelCalculator;
+        var vm = _fuelCalcViewModel;
+        Dispatcher.Invoke(() => vm.UpdateFuelData(calc.GetFuelData()));
     }
 
     /// <summary>
@@ -190,7 +223,12 @@ public partial class WidgetOverlayWindow : Window
         // Unsubscribe from data updates
         if (_relativeOverlay != null)
         {
-            _relativeOverlay.DataUpdated -= OnDataUpdated;
+            _relativeOverlay.DataUpdated -= OnRelativeDataUpdated;
+        }
+
+        if (_fuelCalculator != null)
+        {
+            _fuelCalculator.DataUpdated -= OnFuelDataUpdated;
         }
 
         // Unregister from drag service

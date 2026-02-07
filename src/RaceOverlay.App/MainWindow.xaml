@@ -63,12 +63,18 @@
                 <Border DockPanel.Dock="Top" Background="{StaticResource RO.BackgroundBrush}">
                     <TextBlock Text="Available Widgets" FontSize="14" FontWeight="Bold" Foreground="{StaticResource RO.ForegroundBrush}" Margin="12"/>
                 </Border>
-                <ListBox Name="WidgetListBox" ItemsSource="{Binding AvailableWidgets}" SelectedItem="{Binding SelectedWidget}" Background="Transparent" BorderThickness="0">
+                <ListBox Name="WidgetListBox" ItemsSource="{Binding AvailableWidgets}" SelectedItem="{Binding SelectedWidget}" Background="Transparent" BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Margin="10">
                                 <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" Foreground="{StaticResource RO.ForegroundBrush}"/>
-                                <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{StaticResource RO.MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{StaticResource RO.MutedBrush}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="30" Margin="0,4,0,0"/>
                             </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
@@ -90,35 +96,73 @@
                     Visibility="{Binding IsWidgetSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <!-- Columns Section -->
-                        <TextBlock Text="COLUMNS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
-                        <CheckBox Content="Position" IsChecked="{Binding ShowPosition}" Style="{StaticResource SettingsCheckBox}"/>
-                        <CheckBox Content="Class Color" IsChecked="{Binding ShowClassColor}" Style="{StaticResource SettingsCheckBox}"/>
-                        <CheckBox Content="Driver Name" IsChecked="{Binding ShowDriverName}" Style="{StaticResource SettingsCheckBox}"/>
-                        <CheckBox Content="Rating" IsChecked="{Binding ShowRating}" Style="{StaticResource SettingsCheckBox}"/>
-                        <CheckBox Content="Stint" IsChecked="{Binding ShowStint}" Style="{StaticResource SettingsCheckBox}"/>
-                        <CheckBox Content="Lap Time" IsChecked="{Binding ShowLapTime}" Style="{StaticResource SettingsCheckBox}"/>
-                        <CheckBox Content="Gap" IsChecked="{Binding ShowGap}" Style="{StaticResource SettingsCheckBox}"/>
+                        <!-- Widget Description -->
+                        <TextBlock Text="{Binding SelectedWidget.Description}" FontSize="12" Foreground="{StaticResource RO.MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
 
-                        <!-- Data Section -->
-                        <TextBlock Text="DATA" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+                        <!-- Relative Overlay Settings -->
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedWidgetId}" Value="relative-overlay">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
 
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Drivers Ahead" Style="{StaticResource SettingsLabel}"/>
-                            <TextBox Text="{Binding DriversAhead, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                            <!-- Columns Section -->
+                            <TextBlock Text="COLUMNS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
+                            <CheckBox Content="Position" IsChecked="{Binding ShowPosition}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Class Color" IsChecked="{Binding ShowClassColor}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Driver Name" IsChecked="{Binding ShowDriverName}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Rating" IsChecked="{Binding ShowRating}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Stint" IsChecked="{Binding ShowStint}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Lap Time" IsChecked="{Binding ShowLapTime}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Gap" IsChecked="{Binding ShowGap}" Style="{StaticResource SettingsCheckBox}"/>
+
+                            <!-- Data Section -->
+                            <TextBlock Text="DATA" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Drivers Ahead" Style="{StaticResource SettingsLabel}"/>
+                                <TextBox Text="{Binding DriversAhead, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Drivers Behind" Style="{StaticResource SettingsLabel}"/>
+                                <TextBox Text="{Binding DriversBehind, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
+                                <TextBox Text="{Binding UpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                            </StackPanel>
                         </StackPanel>
 
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Drivers Behind" Style="{StaticResource SettingsLabel}"/>
-                            <TextBox Text="{Binding DriversBehind, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                        <!-- Fuel Calculator Settings -->
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedWidgetId}" Value="fuel-calculator">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+
+                            <TextBlock Text="FUEL SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
+
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Tank Capacity (L)" Style="{StaticResource SettingsLabel}"/>
+                                <TextBox Text="{Binding FuelTankCapacity, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                            </StackPanel>
                         </StackPanel>
 
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
-                            <TextBox Text="{Binding UpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
-                        </StackPanel>
-
-                        <!-- Position Section -->
+                        <!-- Position Section (shared) -->
                         <TextBlock Text="POSITION" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Overlay Position" Style="{StaticResource SettingsLabel}"/>
