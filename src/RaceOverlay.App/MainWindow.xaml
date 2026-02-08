@@ -239,11 +239,19 @@
                                 <TextBox Text="{Binding StandingsMaxDrivers, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
                             </StackPanel>
 
-                            <TextBlock Text="VISIBILITY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+                            <TextBlock Text="COLUMNS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
 
-                            <CheckBox Content="Show Class Color" IsChecked="{Binding StandingsShowClassColor}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Show Best Lap Time" IsChecked="{Binding StandingsShowBestLapTime}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Show Gap" IsChecked="{Binding StandingsShowGap}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Class Color" IsChecked="{Binding StandingsShowClassColor}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Car Number" IsChecked="{Binding StandingsShowCarNumber}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Positions Gained" IsChecked="{Binding StandingsShowPositionsGained}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="License" IsChecked="{Binding StandingsShowLicense}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="iRating" IsChecked="{Binding StandingsShowIRating}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Car Brand" IsChecked="{Binding StandingsShowCarBrand}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Interval" IsChecked="{Binding StandingsShowInterval}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Gap" IsChecked="{Binding StandingsShowGap}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Last Lap Time" IsChecked="{Binding StandingsShowLastLapTime}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Delta" IsChecked="{Binding StandingsShowDelta}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Pit Status" IsChecked="{Binding StandingsShowPitStatus}" Style="{StaticResource SettingsCheckBox}"/>
                         </StackPanel>
 
                         <!-- Lap Timer Settings -->

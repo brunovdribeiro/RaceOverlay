@@ -95,10 +95,34 @@ public partial class MainWindowViewModel : ObservableObject
     private bool standingsShowClassColor = true;
 
     [ObservableProperty]
-    private bool standingsShowBestLapTime = true;
+    private bool standingsShowCarNumber = true;
+
+    [ObservableProperty]
+    private bool standingsShowPositionsGained = true;
+
+    [ObservableProperty]
+    private bool standingsShowLicense = true;
+
+    [ObservableProperty]
+    private bool standingsShowIRating = true;
+
+    [ObservableProperty]
+    private bool standingsShowCarBrand = true;
+
+    [ObservableProperty]
+    private bool standingsShowInterval = true;
 
     [ObservableProperty]
     private bool standingsShowGap = true;
+
+    [ObservableProperty]
+    private bool standingsShowLastLapTime = true;
+
+    [ObservableProperty]
+    private bool standingsShowDelta = true;
+
+    [ObservableProperty]
+    private bool standingsShowPitStatus = true;
 
     [ObservableProperty]
     private int standingsMaxDrivers = 20;
@@ -394,8 +418,16 @@ public partial class MainWindowViewModel : ObservableObject
     {
         StandingsUpdateIntervalMs = config.UpdateIntervalMs;
         StandingsShowClassColor = config.ShowClassColor;
-        StandingsShowBestLapTime = config.ShowBestLapTime;
+        StandingsShowCarNumber = config.ShowCarNumber;
+        StandingsShowPositionsGained = config.ShowPositionsGained;
+        StandingsShowLicense = config.ShowLicense;
+        StandingsShowIRating = config.ShowIRating;
+        StandingsShowCarBrand = config.ShowCarBrand;
+        StandingsShowInterval = config.ShowInterval;
         StandingsShowGap = config.ShowGap;
+        StandingsShowLastLapTime = config.ShowLastLapTime;
+        StandingsShowDelta = config.ShowDelta;
+        StandingsShowPitStatus = config.ShowPitStatus;
         StandingsMaxDrivers = config.MaxDrivers;
         UpdatePositionText(config.OverlayLeft, config.OverlayTop);
     }
@@ -453,8 +485,16 @@ public partial class MainWindowViewModel : ObservableObject
 
     partial void OnStandingsUpdateIntervalMsChanged(int value) => PushStandingsConfigToActiveWidgets();
     partial void OnStandingsShowClassColorChanged(bool value) => PushStandingsConfigToActiveWidgets();
-    partial void OnStandingsShowBestLapTimeChanged(bool value) => PushStandingsConfigToActiveWidgets();
+    partial void OnStandingsShowCarNumberChanged(bool value) => PushStandingsConfigToActiveWidgets();
+    partial void OnStandingsShowPositionsGainedChanged(bool value) => PushStandingsConfigToActiveWidgets();
+    partial void OnStandingsShowLicenseChanged(bool value) => PushStandingsConfigToActiveWidgets();
+    partial void OnStandingsShowIRatingChanged(bool value) => PushStandingsConfigToActiveWidgets();
+    partial void OnStandingsShowCarBrandChanged(bool value) => PushStandingsConfigToActiveWidgets();
+    partial void OnStandingsShowIntervalChanged(bool value) => PushStandingsConfigToActiveWidgets();
     partial void OnStandingsShowGapChanged(bool value) => PushStandingsConfigToActiveWidgets();
+    partial void OnStandingsShowLastLapTimeChanged(bool value) => PushStandingsConfigToActiveWidgets();
+    partial void OnStandingsShowDeltaChanged(bool value) => PushStandingsConfigToActiveWidgets();
+    partial void OnStandingsShowPitStatusChanged(bool value) => PushStandingsConfigToActiveWidgets();
     partial void OnStandingsMaxDriversChanged(int value) => PushStandingsConfigToActiveWidgets();
 
     partial void OnLapTimerUpdateIntervalMsChanged(int value) => PushLapTimerConfigToActiveWidgets();
@@ -614,8 +654,16 @@ public partial class MainWindowViewModel : ObservableObject
         {
             UpdateIntervalMs = StandingsUpdateIntervalMs,
             ShowClassColor = StandingsShowClassColor,
-            ShowBestLapTime = StandingsShowBestLapTime,
+            ShowCarNumber = StandingsShowCarNumber,
+            ShowPositionsGained = StandingsShowPositionsGained,
+            ShowLicense = StandingsShowLicense,
+            ShowIRating = StandingsShowIRating,
+            ShowCarBrand = StandingsShowCarBrand,
+            ShowInterval = StandingsShowInterval,
             ShowGap = StandingsShowGap,
+            ShowLastLapTime = StandingsShowLastLapTime,
+            ShowDelta = StandingsShowDelta,
+            ShowPitStatus = StandingsShowPitStatus,
             MaxDrivers = StandingsMaxDrivers,
             OverlayLeft = left,
             OverlayTop = top

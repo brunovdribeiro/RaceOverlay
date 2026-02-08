@@ -18,10 +18,34 @@ public partial class StandingsViewModel : ObservableObject
     private bool showClassColor = true;
 
     [ObservableProperty]
-    private bool showBestLapTime = true;
+    private bool showCarNumber = true;
+
+    [ObservableProperty]
+    private bool showPositionsGained = true;
+
+    [ObservableProperty]
+    private bool showLicense = true;
+
+    [ObservableProperty]
+    private bool showIRating = true;
+
+    [ObservableProperty]
+    private bool showCarBrand = true;
+
+    [ObservableProperty]
+    private bool showInterval = true;
 
     [ObservableProperty]
     private bool showGap = true;
+
+    [ObservableProperty]
+    private bool showLastLapTime = true;
+
+    [ObservableProperty]
+    private bool showDelta = true;
+
+    [ObservableProperty]
+    private bool showPitStatus = true;
 
     [ObservableProperty]
     private int currentLap;
@@ -32,8 +56,16 @@ public partial class StandingsViewModel : ObservableObject
     public void ApplyConfiguration(IStandingsConfig config)
     {
         ShowClassColor = config.ShowClassColor;
-        ShowBestLapTime = config.ShowBestLapTime;
+        ShowCarNumber = config.ShowCarNumber;
+        ShowPositionsGained = config.ShowPositionsGained;
+        ShowLicense = config.ShowLicense;
+        ShowIRating = config.ShowIRating;
+        ShowCarBrand = config.ShowCarBrand;
+        ShowInterval = config.ShowInterval;
         ShowGap = config.ShowGap;
+        ShowLastLapTime = config.ShowLastLapTime;
+        ShowDelta = config.ShowDelta;
+        ShowPitStatus = config.ShowPitStatus;
     }
 
     public void UpdateStandings(IReadOnlyList<StandingDriver> standings, int currentLap, int totalLaps)

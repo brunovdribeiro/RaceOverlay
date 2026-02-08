@@ -5,15 +5,16 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:conv="clr-namespace:RaceOverlay.Engine.Converters"
              mc:Ignorable="d"
-             d:DesignHeight="600" d:DesignWidth="400"
+             d:DesignHeight="600" d:DesignWidth="900"
              Background="{StaticResource RO.BackgroundBrush}"
              Foreground="{StaticResource RO.ForegroundBrush}"
-             MinWidth="400">
+             MinWidth="700">
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <conv:StringToSolidColorBrushConverter x:Key="ColorConv"/>
         <conv:LapTimeConverter x:Key="LapTimeConv"/>
+        <conv:PositionsGainedConverter x:Key="PosGainedConv"/>
     </UserControl.Resources>
 
     <Grid Margin="12">
@@ -42,7 +43,7 @@
         <ItemsControl Grid.Row="1" ItemsSource="{Binding Drivers}">
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Border Padding="8,10" BorderBrush="{StaticResource RO.BorderBrush}" BorderThickness="0,0,0,1">
+                    <Border Padding="8,6" BorderBrush="{StaticResource RO.BorderBrush}" BorderThickness="0,0,0,1">
                         <Border.Style>
                             <Style TargetType="Border">
                                 <Setter Property="Background" Value="{StaticResource RO.SurfaceBrush}"/>
@@ -58,54 +59,191 @@
 
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <!-- Position -->
-                                <ColumnDefinition Width="36"/>
-                                <!-- Class Color Stripe -->
+                                <!-- 0: Position -->
+                                <ColumnDefinition Width="30"/>
+                                <!-- 1: Class Color Stripe -->
                                 <ColumnDefinition Width="Auto"/>
-                                <!-- Driver Name -->
+                                <!-- 2: Car Number -->
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- 3: Driver Name -->
                                 <ColumnDefinition Width="*"/>
-                                <!-- Best Lap -->
+                                <!-- 4: Positions Gained -->
                                 <ColumnDefinition Width="Auto"/>
-                                <!-- Gap -->
+                                <!-- 5: License -->
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- 6: iRating -->
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- 7: Car Brand -->
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- 8: Interval -->
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- 9: Gap -->
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- 10: Last Lap Time -->
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- 11: Delta -->
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- 12: Pit Status -->
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
                             <!-- Position -->
                             <TextBlock Grid.Column="0"
-                                       FontSize="16" FontWeight="SemiBold"
+                                       Text="{Binding Position, Mode=OneWay}"
+                                       FontSize="13" FontWeight="SemiBold"
                                        Foreground="{StaticResource RO.ForegroundBrush}"
-                                       VerticalAlignment="Center">
-                                <Run Text="P"/><Run Text="{Binding Position, Mode=OneWay}"/>
+                                       VerticalAlignment="Center" TextAlignment="Right"
+                                       Margin="0,0,6,0"/>
+
+                            <!-- Class Color Stripe + Category -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                        Visibility="{Binding DataContext.ShowClassColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
+                                        Margin="0,0,6,0">
+                                <Border Background="{Binding ClassColor, Converter={StaticResource ColorConv}}"
+                                        Width="4" CornerRadius="2" VerticalAlignment="Stretch"/>
+                                <TextBlock Text="{Binding VehicleClass}" FontSize="10"
+                                           Foreground="{StaticResource RO.MutedBrush}"
+                                           VerticalAlignment="Center" Margin="4,0,0,0"/>
+                            </StackPanel>
+
+                            <!-- Car Number -->
+                            <TextBlock Grid.Column="2"
+                                       FontSize="12" MinWidth="28"
+                                       Foreground="{StaticResource RO.MutedBrush}"
+                                       VerticalAlignment="Center" TextAlignment="Right"
+                                       Visibility="{Binding DataContext.ShowCarNumber, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
+                                       Margin="0,0,8,0">
+                                <TextBlock.Text>
+                                    <Binding Path="CarNumber" StringFormat="#{0}"/>
+                                </TextBlock.Text>
                             </TextBlock>
 
-                            <!-- Class Color Stripe -->
-                            <Border Grid.Column="1"
-                                    Background="{Binding ClassColor, Converter={StaticResource ColorConv}}"
-                                    Width="4" CornerRadius="2" VerticalAlignment="Stretch"
-                                    Visibility="{Binding DataContext.ShowClassColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
-                                    Margin="0,0,8,0"/>
-
                             <!-- Driver Name -->
-                            <TextBlock Grid.Column="2"
+                            <TextBlock Grid.Column="3"
                                        Text="{Binding DriverName}" FontSize="13" FontWeight="SemiBold"
                                        Foreground="{StaticResource RO.ForegroundBrush}"
                                        VerticalAlignment="Center" Margin="0,0,8,0"/>
 
-                            <!-- Best Lap Time -->
-                            <TextBlock Grid.Column="3"
-                                       Text="{Binding BestLapTime, Converter={StaticResource LapTimeConv}}"
-                                       FontSize="12" MinWidth="70"
-                                       Foreground="{StaticResource RO.ForegroundBrush}"
+                            <!-- Positions Gained -->
+                            <TextBlock Grid.Column="4"
+                                       Text="{Binding PositionsGained, Converter={StaticResource PosGainedConv}}"
+                                       FontSize="11" MinWidth="30"
                                        VerticalAlignment="Center" TextAlignment="Right"
-                                       Visibility="{Binding DataContext.ShowBestLapTime, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
+                                       Visibility="{Binding DataContext.ShowPositionsGained, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
+                                       Margin="0,0,8,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource RO.MutedBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Value="True">
+                                                <DataTrigger.Binding>
+                                                    <Binding Path="PositionsGained">
+                                                        <Binding.Converter>
+                                                            <conv:GreaterThanZeroConverter/>
+                                                        </Binding.Converter>
+                                                    </Binding>
+                                                </DataTrigger.Binding>
+                                                <Setter Property="Foreground" Value="{StaticResource RO.GreenBrush}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Value="True">
+                                                <DataTrigger.Binding>
+                                                    <Binding Path="PositionsGained">
+                                                        <Binding.Converter>
+                                                            <conv:LessThanZeroConverter/>
+                                                        </Binding.Converter>
+                                                    </Binding>
+                                                </DataTrigger.Binding>
+                                                <Setter Property="Foreground" Value="{StaticResource RO.RedBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+
+                            <!-- License Class -->
+                            <TextBlock Grid.Column="5"
+                                       Text="{Binding LicenseClass}" FontSize="11" MinWidth="50"
+                                       Foreground="{Binding LicenseColor, Converter={StaticResource ColorConv}}"
+                                       VerticalAlignment="Center" TextAlignment="Center"
+                                       Visibility="{Binding DataContext.ShowLicense, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
                                        Margin="0,0,8,0"/>
 
-                            <!-- Gap to Leader -->
-                            <TextBlock Grid.Column="4"
-                                       FontSize="12" MinWidth="70"
+                            <!-- iRating -->
+                            <StackPanel Grid.Column="6" Orientation="Horizontal"
+                                        VerticalAlignment="Center"
+                                        Visibility="{Binding DataContext.ShowIRating, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
+                                        Margin="0,0,8,0">
+                                <TextBlock Text="{Binding IRating}" FontSize="11" MinWidth="35"
+                                           Foreground="{StaticResource RO.ForegroundBrush}"
+                                           TextAlignment="Right"/>
+                                <TextBlock FontSize="10" Margin="3,0,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{StaticResource RO.MutedBrush}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Value="True">
+                                                    <DataTrigger.Binding>
+                                                        <Binding Path="IRatingGain">
+                                                            <Binding.Converter>
+                                                                <conv:GreaterThanZeroConverter/>
+                                                            </Binding.Converter>
+                                                        </Binding>
+                                                    </DataTrigger.Binding>
+                                                    <Setter Property="Foreground" Value="{StaticResource RO.GreenBrush}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Value="True">
+                                                    <DataTrigger.Binding>
+                                                        <Binding Path="IRatingGain">
+                                                            <Binding.Converter>
+                                                                <conv:LessThanZeroConverter/>
+                                                            </Binding.Converter>
+                                                        </Binding>
+                                                    </DataTrigger.Binding>
+                                                    <Setter Property="Foreground" Value="{StaticResource RO.RedBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                    <TextBlock.Text>
+                                        <Binding Path="IRatingGain" StringFormat="({0:+#;-#;0})"/>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+
+                            <!-- Car Brand -->
+                            <TextBlock Grid.Column="7"
+                                       Text="{Binding CarBrand}" FontSize="11" MinWidth="100"
+                                       Foreground="{StaticResource RO.MutedBrush}"
+                                       VerticalAlignment="Center"
+                                       Visibility="{Binding DataContext.ShowCarBrand, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
+                                       Margin="0,0,8,0"/>
+
+                            <!-- Interval -->
+                            <TextBlock Grid.Column="8"
+                                       FontSize="12" MinWidth="60"
                                        Foreground="{StaticResource RO.MutedBrush}"
                                        VerticalAlignment="Center" TextAlignment="Right"
-                                       Visibility="{Binding DataContext.ShowGap, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}">
+                                       Visibility="{Binding DataContext.ShowInterval, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
+                                       Margin="0,0,8,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="{Binding Interval, StringFormat=+{0:F3}}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Position}" Value="1">
+                                                <Setter Property="Text" Value="---"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+
+                            <!-- Gap to Leader -->
+                            <TextBlock Grid.Column="9"
+                                       FontSize="12" MinWidth="65"
+                                       Foreground="{StaticResource RO.MutedBrush}"
+                                       VerticalAlignment="Center" TextAlignment="Right"
+                                       Visibility="{Binding DataContext.ShowGap, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
+                                       Margin="0,0,8,0">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Text" Value="{Binding GapToLeader, StringFormat=+{0:F3}}"/>
@@ -113,6 +251,63 @@
                                             <DataTrigger Binding="{Binding Position}" Value="1">
                                                 <Setter Property="Text" Value="LEADER"/>
                                                 <Setter Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+
+                            <!-- Last Lap Time -->
+                            <TextBlock Grid.Column="10"
+                                       Text="{Binding LastLapTime, Converter={StaticResource LapTimeConv}}"
+                                       FontSize="12" MinWidth="70"
+                                       Foreground="{StaticResource RO.ForegroundBrush}"
+                                       VerticalAlignment="Center" TextAlignment="Right"
+                                       Visibility="{Binding DataContext.ShowLastLapTime, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
+                                       Margin="0,0,8,0"/>
+
+                            <!-- Delta -->
+                            <TextBlock Grid.Column="11"
+                                       FontSize="12" MinWidth="60"
+                                       VerticalAlignment="Center" TextAlignment="Right"
+                                       Visibility="{Binding DataContext.ShowDelta, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
+                                       Margin="0,0,8,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="{Binding Delta, StringFormat=+{0:F3}}"/>
+                                        <Setter Property="Foreground" Value="{StaticResource RO.RedBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Value="True">
+                                                <DataTrigger.Binding>
+                                                    <Binding Path="Delta">
+                                                        <Binding.Converter>
+                                                            <conv:LessThanZeroConverter/>
+                                                        </Binding.Converter>
+                                                    </Binding>
+                                                </DataTrigger.Binding>
+                                                <Setter Property="Foreground" Value="{StaticResource RO.GreenBrush}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsPlayer}" Value="True">
+                                                <Setter Property="Text" Value="---"/>
+                                                <Setter Property="Foreground" Value="{StaticResource RO.MutedBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+
+                            <!-- Pit Status -->
+                            <TextBlock Grid.Column="12"
+                                       FontSize="11" FontWeight="Bold" MinWidth="30"
+                                       Foreground="{StaticResource RO.MagentaBrush}"
+                                       VerticalAlignment="Center" TextAlignment="Center"
+                                       Visibility="{Binding DataContext.ShowPitStatus, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value=""/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsInPit}" Value="True">
+                                                <Setter Property="Text" Value="PIT"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
