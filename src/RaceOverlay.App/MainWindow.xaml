@@ -300,6 +300,32 @@
                             <CheckBox Content="Show Pit Status" IsChecked="{Binding TrackMapShowPitStatus}" Style="{StaticResource SettingsCheckBox}"/>
                         </StackPanel>
 
+                        <!-- Weather Settings -->
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedWidgetId}" Value="weather">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+
+                            <TextBlock Text="WEATHER SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
+
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
+                                <TextBox Text="{Binding WeatherUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                            </StackPanel>
+
+                            <TextBlock Text="VISIBILITY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+
+                            <CheckBox Content="Show Wind" IsChecked="{Binding WeatherShowWind}" Style="{StaticResource SettingsCheckBox}"/>
+                            <CheckBox Content="Show Forecast" IsChecked="{Binding WeatherShowForecast}" Style="{StaticResource SettingsCheckBox}"/>
+                        </StackPanel>
+
                         <!-- Input Trace Settings -->
                         <StackPanel>
                             <StackPanel.Style>

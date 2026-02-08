@@ -1,0 +1,175 @@
+<UserControl x:Class="RaceOverlay.Engine.Views.WeatherView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:conv="clr-namespace:RaceOverlay.Engine.Converters"
+             mc:Ignorable="d"
+             d:DesignHeight="400" d:DesignWidth="280"
+             Background="{DynamicResource RO.BackgroundBrush}"
+             Foreground="{DynamicResource RO.ForegroundBrush}"
+             MinWidth="250">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <conv:RainLevelConverter x:Key="RainLevelConv"/>
+        <conv:FuelBarWidthConverter x:Key="BarWidthConv"/>
+        <conv:GreaterThanZeroConverter x:Key="GtZeroConv"/>
+
+        <Style x:Key="WeatherLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource RO.MutedBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="WeatherValue" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource RO.ForegroundBrush}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource RO.BackgroundBrush}"
+            BorderBrush="{DynamicResource RO.BorderBrush}"
+            BorderThickness="1" CornerRadius="4" Padding="12">
+        <StackPanel>
+            <!-- Header -->
+            <Grid Margin="0,0,0,8">
+                <TextBlock Text="WEATHER" FontSize="11" FontWeight="Bold"
+                           Foreground="{DynamicResource RO.MutedBrush}" HorizontalAlignment="Left"/>
+                <TextBlock HorizontalAlignment="Right" FontSize="11" FontWeight="Bold"
+                           Foreground="{DynamicResource RO.MutedBrush}">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="L{0}/{1}">
+                            <Binding Path="CurrentLap"/>
+                            <Binding Path="TotalLaps"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </Grid>
+
+            <Border Background="{DynamicResource RO.BorderBrush}" Height="1" Margin="0,0,0,10"/>
+
+            <!-- Core Weather Data -->
+            <Grid Margin="0,0,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="26"/>
+                    <RowDefinition Height="26"/>
+                    <RowDefinition Height="26"/>
+                    <RowDefinition Height="26"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Conditions" Style="{StaticResource WeatherLabel}"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Conditions}" Style="{StaticResource WeatherValue}"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Track Temp" Style="{StaticResource WeatherLabel}"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding TrackTempC, StringFormat={}{0:F1}°C}" Style="{StaticResource WeatherValue}"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Air Temp" Style="{StaticResource WeatherLabel}"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding AirTempC, StringFormat={}{0:F1}°C}" Style="{StaticResource WeatherValue}"/>
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Humidity" Style="{StaticResource WeatherLabel}"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding HumidityPercent, StringFormat={}{0}%}" Style="{StaticResource WeatherValue}"/>
+            </Grid>
+
+            <!-- Wind Section -->
+            <StackPanel Visibility="{Binding ShowWind, Converter={StaticResource BoolToVis}}">
+                <Grid Margin="0,0,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="26"/>
+                        <RowDefinition Height="26"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Wind Speed" Style="{StaticResource WeatherLabel}"/>
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding WindSpeedKph, StringFormat={}{0:F0} km/h}" Style="{StaticResource WeatherValue}"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Wind Direction" Style="{StaticResource WeatherLabel}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding WindDirection}" Style="{StaticResource WeatherValue}"/>
+                </Grid>
+            </StackPanel>
+
+            <!-- Rain Chance Bar -->
+            <Grid Margin="0,8,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Background="{DynamicResource RO.SurfaceBrush}"
+                        CornerRadius="3" Height="18" Margin="0,0,8,0"
+                        Name="RainBarContainer">
+                    <Border CornerRadius="3" HorizontalAlignment="Left"
+                            Name="RainBar" Height="18">
+                        <Border.Width>
+                            <MultiBinding Converter="{StaticResource BarWidthConv}">
+                                <Binding Path="RainChancePercent"/>
+                                <Binding Path="ActualWidth" ElementName="RainBarContainer"/>
+                            </MultiBinding>
+                        </Border.Width>
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#22C55E"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding RainChancePercent, Converter={StaticResource RainLevelConv}, ConverterParameter=red}" Value="True">
+                                        <Setter Property="Background" Value="#EF4444"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding RainChancePercent, Converter={StaticResource RainLevelConv}, ConverterParameter=yellow}" Value="True">
+                                        <Setter Property="Background" Value="#EAB308"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                    </Border>
+                </Border>
+
+                <TextBlock Grid.Column="1" Text="{Binding RainChancePercent, StringFormat={}{0:F0}%}"
+                           FontSize="11" FontWeight="Bold" Foreground="{DynamicResource RO.ForegroundBrush}"
+                           VerticalAlignment="Center" MinWidth="42" TextAlignment="Right"/>
+            </Grid>
+
+            <TextBlock Text="Rain Chance" FontSize="10" Foreground="{DynamicResource RO.MutedBrush}" Margin="0,0,0,6"/>
+
+            <!-- Forecast Section -->
+            <StackPanel Visibility="{Binding ShowForecast, Converter={StaticResource BoolToVis}}">
+                <Border Background="{DynamicResource RO.BorderBrush}" Height="1" Margin="0,4,0,8"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="26"/>
+                        <RowDefinition Height="26"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Forecast" Style="{StaticResource WeatherLabel}"/>
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding ForecastConditions}" Style="{StaticResource WeatherValue}"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="ETA" Style="{StaticResource WeatherLabel}"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource WeatherValue}">
+                                <Setter Property="Text" Value="{Binding ForecastMinutes, StringFormat=~{0} min}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ForecastMinutes}" Value="-1">
+                                        <Setter Property="Text" Value="No change"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

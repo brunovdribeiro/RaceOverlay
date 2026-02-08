@@ -151,6 +151,18 @@ public partial class App : Application
                 Author = "RaceOverlay Team"
             });
 
+            // Register Weather Widget
+            registry.RegisterWidget(new WidgetMetadata
+            {
+                WidgetId = "weather",
+                DisplayName = "Weather",
+                Description = "Displays track/air temperature, weather conditions, humidity, wind, and rain forecast.",
+                WidgetType = typeof(WeatherWidget),
+                ConfigurationType = typeof(WeatherConfig),
+                Version = "1.0.0",
+                Author = "RaceOverlay Team"
+            });
+
             return registry;
         });
 
@@ -188,6 +200,11 @@ public partial class App : Application
         services.AddTransient<TrackMapWidget>();
         services.AddTransient<TrackMapViewModel>();
         services.AddTransient<TrackMapView>();
+
+        // Weather Widget
+        services.AddTransient<WeatherWidget>();
+        services.AddTransient<WeatherViewModel>();
+        services.AddTransient<WeatherView>();
 
         // ViewModels
         services.AddTransient<MainWindowViewModel>();

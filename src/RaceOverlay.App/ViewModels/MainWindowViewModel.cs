@@ -129,6 +129,16 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private bool trackMapShowPitStatus = true;
 
+    // Weather settings
+    [ObservableProperty]
+    private int weatherUpdateIntervalMs = 2000;
+
+    [ObservableProperty]
+    private bool weatherShowWind = true;
+
+    [ObservableProperty]
+    private bool weatherShowForecast = true;
+
     // Input Trace settings
     [ObservableProperty]
     private int inputTraceUpdateIntervalMs = 16;
@@ -295,6 +305,27 @@ public partial class MainWindowViewModel : ObservableObject
                 }
             }
         }
+        else if (value.WidgetId == "weather")
+        {
+            if (_savedConfigs.TryGetValue(value.WidgetId, out var saved) && saved is IWeatherConfig weatherConfig)
+            {
+                LoadConfigFromWeatherWidget(weatherConfig);
+            }
+            else
+            {
+                var activeInstance = _activeWidgets.Values
+                    .FirstOrDefault(w => w.WidgetId == value.WidgetId);
+
+                if (activeInstance?.Configuration is IWeatherConfig config)
+                {
+                    LoadConfigFromWeatherWidget(config);
+                }
+                else
+                {
+                    LoadConfigFromWeatherWidget(new WeatherConfig());
+                }
+            }
+        }
         else
         {
             // Relative Overlay or other widgets
@@ -387,6 +418,14 @@ public partial class MainWindowViewModel : ObservableObject
         UpdatePositionText(config.OverlayLeft, config.OverlayTop);
     }
 
+    private void LoadConfigFromWeatherWidget(IWeatherConfig config)
+    {
+        WeatherUpdateIntervalMs = config.UpdateIntervalMs;
+        WeatherShowWind = config.ShowWind;
+        WeatherShowForecast = config.ShowForecast;
+        UpdatePositionText(config.OverlayLeft, config.OverlayTop);
+    }
+
     // Push config changes to active widget instances when toggles change
     partial void OnShowPositionChanged(bool value) => PushRelativeConfigToActiveWidgets();
     partial void OnShowClassColorChanged(bool value) => PushRelativeConfigToActiveWidgets();
@@ -427,6 +466,10 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnTrackMapUpdateIntervalMsChanged(int value) => PushTrackMapConfigToActiveWidgets();
     partial void OnTrackMapShowDriverNamesChanged(bool value) => PushTrackMapConfigToActiveWidgets();
     partial void OnTrackMapShowPitStatusChanged(bool value) => PushTrackMapConfigToActiveWidgets();
+
+    partial void OnWeatherUpdateIntervalMsChanged(int value) => PushWeatherConfigToActiveWidgets();
+    partial void OnWeatherShowWindChanged(bool value) => PushWeatherConfigToActiveWidgets();
+    partial void OnWeatherShowForecastChanged(bool value) => PushWeatherConfigToActiveWidgets();
 
     private void PushRelativeConfigToActiveWidgets()
     {
@@ -677,6 +720,45 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
+    private void PushWeatherConfigToActiveWidgets()
+    {
+        if (SelectedWidget == null || SelectedWidgetId != "weather") return;
+
+        double left = double.NaN, top = double.NaN;
+        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing) && existing is WeatherConfig existingWeather)
+        {
+            left = existingWeather.OverlayLeft;
+            top = existingWeather.OverlayTop;
+        }
+
+        var config = new WeatherConfig
+        {
+            UpdateIntervalMs = WeatherUpdateIntervalMs,
+            ShowWind = WeatherShowWind,
+            ShowForecast = WeatherShowForecast,
+            OverlayLeft = left,
+            OverlayTop = top
+        };
+
+        _savedConfigs[SelectedWidget.WidgetId] = config;
+
+        foreach (var kv in _activeWidgets)
+        {
+            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            {
+                kv.Value.UpdateConfiguration(config);
+            }
+        }
+
+        foreach (var kv in _activeWindows)
+        {
+            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            {
+                kv.Value.ApplyWeatherConfig(config);
+            }
+        }
+    }
+
     private void PushFuelConfigToActiveWidgets()
     {
         if (SelectedWidget == null || SelectedWidgetId != "fuel-calculator") return;
@@ -759,6 +841,11 @@ public partial class MainWindowViewModel : ObservableObject
                 trackMapConfig.OverlayLeft = left;
                 trackMapConfig.OverlayTop = top;
             }
+            else if (config is WeatherConfig weatherConfig)
+            {
+                weatherConfig.OverlayLeft = left;
+                weatherConfig.OverlayTop = top;
+            }
         }
         else
         {
@@ -785,6 +872,10 @@ public partial class MainWindowViewModel : ObservableObject
             else if (widgetId == "track-map")
             {
                 _savedConfigs[widgetId] = new TrackMapConfig { OverlayLeft = left, OverlayTop = top };
+            }
+            else if (widgetId == "weather")
+            {
+                _savedConfigs[widgetId] = new WeatherConfig { OverlayLeft = left, OverlayTop = top };
             }
             else
             {
@@ -912,6 +1003,11 @@ public partial class MainWindowViewModel : ObservableObject
             {
                 savedLeft = trackMapConfig.OverlayLeft;
                 savedTop = trackMapConfig.OverlayTop;
+            }
+            else if (savedConfig is WeatherConfig weatherConfig)
+            {
+                savedLeft = weatherConfig.OverlayLeft;
+                savedTop = weatherConfig.OverlayTop;
             }
 
             if (!double.IsNaN(savedLeft) && !double.IsNaN(savedTop))

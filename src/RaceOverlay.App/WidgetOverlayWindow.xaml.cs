@@ -31,6 +31,8 @@ public partial class WidgetOverlayWindow : Window
     private LapTimerViewModel? _lapTimerViewModel;
     private TrackMapWidget? _trackMapWidget;
     private TrackMapViewModel? _trackMapViewModel;
+    private WeatherWidget? _weatherWidget;
+    private WeatherViewModel? _weatherViewModel;
 
     public static readonly DependencyProperty WidgetProperty =
         DependencyProperty.Register(nameof(Widget), typeof(IWidget), typeof(WidgetOverlayWindow));
@@ -203,6 +205,23 @@ public partial class WidgetOverlayWindow : Window
 
             trackMapWidget.DataUpdated += OnTrackMapDataUpdated;
         }
+        else if (Widget is WeatherWidget weatherWidget)
+        {
+            _weatherWidget = weatherWidget;
+            var view = new WeatherView();
+            _weatherViewModel = new WeatherViewModel();
+
+            if (weatherWidget.Configuration is IWeatherConfig config)
+            {
+                _weatherViewModel.ApplyConfiguration(config);
+            }
+
+            _weatherViewModel.UpdateWeather(weatherWidget.GetWeatherData());
+            view.DataContext = _weatherViewModel;
+            WidgetContent.Content = view;
+
+            weatherWidget.DataUpdated += OnWeatherDataUpdated;
+        }
 
         // Register this window for drag management
         WidgetDragService.Instance.RegisterWindow(this);
@@ -247,6 +266,11 @@ public partial class WidgetOverlayWindow : Window
     public void ApplyTrackMapConfig(ITrackMapConfig config)
     {
         _trackMapViewModel?.ApplyConfiguration(config);
+    }
+
+    public void ApplyWeatherConfig(IWeatherConfig config)
+    {
+        _weatherViewModel?.ApplyConfiguration(config);
     }
 
     private void OnRelativeDataUpdated()
@@ -311,6 +335,15 @@ public partial class WidgetOverlayWindow : Window
         var vm = _trackMapViewModel;
         var data = widget.GetTrackMapData();
         Dispatcher.Invoke(() => vm.UpdateMap(data.Drivers, data.CurrentLap, data.TotalLaps));
+    }
+
+    private void OnWeatherDataUpdated()
+    {
+        if (_weatherWidget == null || _weatherViewModel == null) return;
+
+        var widget = _weatherWidget;
+        var vm = _weatherViewModel;
+        Dispatcher.Invoke(() => vm.UpdateWeather(widget.GetWeatherData()));
     }
 
     /// <summary>
@@ -422,6 +455,11 @@ public partial class WidgetOverlayWindow : Window
         if (_trackMapWidget != null)
         {
             _trackMapWidget.DataUpdated -= OnTrackMapDataUpdated;
+        }
+
+        if (_weatherWidget != null)
+        {
+            _weatherWidget.DataUpdated -= OnWeatherDataUpdated;
         }
 
         // Unregister from drag service
