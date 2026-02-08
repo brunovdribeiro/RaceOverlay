@@ -1,3 +1,4 @@
+using RaceOverlay.Core.Services;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Engine.Models;
 
@@ -6,7 +7,7 @@ namespace RaceOverlay.Engine.Widgets;
 public class InputsConfig : IInputsConfig
 {
     public int UpdateIntervalMs { get; set; } = 16;
-    public bool UseMockData { get; set; } = true;
+    public bool UseMockData { get; set; } = false;
     public double OverlayLeft { get; set; } = double.NaN;
     public double OverlayTop { get; set; } = double.NaN;
     public string ThrottleColor { get; set; } = "#22C55E";
@@ -20,6 +21,7 @@ public class InputsWidget : IWidget
     private InputsConfig _configuration;
     private CancellationTokenSource? _cancellationTokenSource;
     private Task? _updateTask;
+    private readonly ILiveTelemetryService? _telemetryService;
 
     // Mock state
     private double _elapsed;
@@ -32,9 +34,13 @@ public class InputsWidget : IWidget
     public string Description => "Visualizes throttle, brake, and steering telemetry in real time.";
     public IWidgetConfiguration Configuration => _configuration;
 
-    public InputsWidget()
+    private bool UseLiveData => !_configuration.UseMockData
+                                && _telemetryService?.IsConnected == true;
+
+    public InputsWidget(ILiveTelemetryService? telemetryService = null)
     {
         _configuration = new InputsConfig();
+        _telemetryService = telemetryService;
     }
 
     public void UpdateConfiguration(IWidgetConfiguration configuration)
@@ -91,15 +97,42 @@ public class InputsWidget : IWidget
 
     public InputsData GetInputsData()
     {
-        // Sinusoidal mock data for development
-        double throttle = Math.Max(0, Math.Sin(_elapsed * 1.2)) ;
+        if (UseLiveData)
+        {
+            return GetLiveInputsData();
+        }
+
+        return GetMockInputsData();
+    }
+
+    private InputsData GetLiveInputsData()
+    {
+        var ts = _telemetryService!;
+
+        float steeringAngle = ts.GetFloat("SteeringWheelAngle");
+        // Normalize to -1..1 (max lock is roughly 7.8 rad / ~450 degrees)
+        double steering = Math.Clamp(steeringAngle / 7.8, -1.0, 1.0);
+
+        return new InputsData
+        {
+            Throttle = ts.GetFloat("Throttle"),
+            Brake = ts.GetFloat("Brake"),
+            Clutch = ts.GetFloat("Clutch"),
+            Steering = steering,
+            Gear = ts.GetInt("Gear"),
+            Speed = ts.GetFloat("Speed") * 3.6  // m/s → km/h
+        };
+    }
+
+    private InputsData GetMockInputsData()
+    {
+        double throttle = Math.Max(0, Math.Sin(_elapsed * 1.2));
         double brake = Math.Max(0, Math.Sin(_elapsed * 1.2 + Math.PI));
         double steering = Math.Sin(_elapsed * 0.7);
         double clutch = Math.Max(0, Math.Sin(_elapsed * 0.3));
 
-        // Cycle through gears based on elapsed time
         int gear = ((int)(_elapsed / 3.0) % 8) + 1;
-        if (gear > 6) gear = 6 - (gear - 6); // bounce 1-6-1
+        if (gear > 6) gear = 6 - (gear - 6);
 
         double speed = 60 + throttle * 200 + _random.NextDouble() * 5;
 

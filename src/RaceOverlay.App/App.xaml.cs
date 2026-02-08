@@ -1,14 +1,15 @@
-﻿using System.Configuration;
-using System.Data;
-using System.Windows;
+﻿using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RaceOverlay.App.ViewModels;
+using RaceOverlay.Core.Providers;
+using RaceOverlay.Core.Services;
 using RaceOverlay.Engine.Widgets;
 using RaceOverlay.Engine.Views;
 using RaceOverlay.Engine.ViewModels;
 using RaceOverlay.Core.Widgets;
+using RaceOverlay.Providers.iRacing;
 
 namespace RaceOverlay.App;
 
@@ -19,6 +20,7 @@ namespace RaceOverlay.App;
 public partial class App : Application
 {
     private IHost? _host;
+    private IRacingDataService? _dataService;
 
     /// <summary>
     /// Called when the application starts.
@@ -40,6 +42,10 @@ public partial class App : Application
             })
             .Build();
 
+        // Start the iRacing data service
+        _dataService = _host.Services.GetRequiredService<IRacingDataService>();
+        _dataService.Start();
+
         // Get the main window from DI and show it
         var mainWindow = _host.Services.GetRequiredService<MainWindow>();
         mainWindow.Show();
@@ -53,6 +59,7 @@ public partial class App : Application
     /// </summary>
     protected override void OnExit(ExitEventArgs e)
     {
+        _dataService?.Stop();
         _host?.Dispose();
         base.OnExit(e);
     }
@@ -62,6 +69,11 @@ public partial class App : Application
     /// </summary>
     private static void ConfigureServices(IServiceCollection services)
     {
+        // iRacing telemetry service (singleton — shared across all widgets)
+        services.AddSingleton<IRacingDataService>();
+        services.AddSingleton<ILiveTelemetryService>(sp => sp.GetRequiredService<IRacingDataService>());
+        services.AddSingleton<IGameProvider, IRacingProvider>();
+
         // Widget system
         services.AddSingleton<IWidgetRegistry>(sp =>
         {
@@ -212,4 +224,5 @@ public partial class App : Application
         // Views
         services.AddTransient<MainWindow>();
         services.AddTransient<WidgetOverlayWindow>();
-    }}
+    }
+}

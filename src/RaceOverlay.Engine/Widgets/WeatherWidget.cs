@@ -1,3 +1,4 @@
+using RaceOverlay.Core.Services;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Engine.Models;
 
@@ -6,7 +7,7 @@ namespace RaceOverlay.Engine.Widgets;
 public class WeatherConfig : IWeatherConfig
 {
     public int UpdateIntervalMs { get; set; } = 2000;
-    public bool UseMockData { get; set; } = true;
+    public bool UseMockData { get; set; } = false;
     public double OverlayLeft { get; set; } = double.NaN;
     public double OverlayTop { get; set; } = double.NaN;
     public bool ShowWind { get; set; } = true;
@@ -19,9 +20,10 @@ public class WeatherWidget : IWidget
     private CancellationTokenSource? _cancellationTokenSource;
     private Task? _updateTask;
     private readonly Random _random = new();
+    private readonly ILiveTelemetryService? _telemetryService;
 
-    // Weather state
-    private int _weatherState; // 0=Clear, 1=Overcast, 2=Light Rain, 3=Heavy Rain
+    // Mock weather state
+    private int _weatherState;
     private double _trackTemp;
     private double _airTemp;
     private int _humidity;
@@ -43,9 +45,13 @@ public class WeatherWidget : IWidget
 
     public int TotalLaps { get; private set; } = 24;
 
-    public WeatherWidget()
+    private bool UseLiveData => !_configuration.UseMockData
+                                && _telemetryService?.IsConnected == true;
+
+    public WeatherWidget(ILiveTelemetryService? telemetryService = null)
     {
         _configuration = new WeatherConfig();
+        _telemetryService = telemetryService;
     }
 
     public void UpdateConfiguration(IWidgetConfiguration configuration)
@@ -60,7 +66,10 @@ public class WeatherWidget : IWidget
     {
         _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        InitializeMockData();
+        if (!UseLiveData)
+        {
+            InitializeMockData();
+        }
 
         _updateTask = UpdateLoopAsync(_cancellationTokenSource.Token);
         await Task.CompletedTask;
@@ -86,7 +95,7 @@ public class WeatherWidget : IWidget
 
     private void InitializeMockData()
     {
-        _weatherState = 0; // Clear
+        _weatherState = 0;
         _trackTemp = 38.0;
         _airTemp = 22.0;
         _humidity = 45;
@@ -102,7 +111,11 @@ public class WeatherWidget : IWidget
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                UpdateMockWeather();
+                if (!UseLiveData)
+                {
+                    UpdateMockWeather();
+                }
+
                 DataUpdated?.Invoke();
                 await Task.Delay(_configuration.UpdateIntervalMs, cancellationToken);
             }
@@ -114,7 +127,6 @@ public class WeatherWidget : IWidget
 
     private void UpdateMockWeather()
     {
-        // State transitions: 1/200 chance to move to adjacent state
         if (_random.Next(200) == 0)
         {
             if (_weatherState == 0)
@@ -125,34 +137,22 @@ public class WeatherWidget : IWidget
                 _weatherState += _random.Next(2) == 0 ? -1 : 1;
         }
 
-        // Temperature drift
         _trackTemp += (_random.NextDouble() - 0.5) * 0.2;
         _airTemp += (_random.NextDouble() - 0.5) * 0.1;
 
-        // Track temp influenced by weather state
         double trackTempTarget = _weatherState switch
         {
-            0 => 38.0,
-            1 => 34.0,
-            2 => 28.0,
-            3 => 24.0,
-            _ => 38.0
+            0 => 38.0, 1 => 34.0, 2 => 28.0, 3 => 24.0, _ => 38.0
         };
         _trackTemp += (trackTempTarget - _trackTemp) * 0.01;
 
-        // Humidity correlates with weather state
         int humidityTarget = _weatherState switch
         {
-            0 => 45,
-            1 => 62,
-            2 => 80,
-            3 => 90,
-            _ => 45
+            0 => 45, 1 => 62, 2 => 80, 3 => 90, _ => 45
         };
         _humidity += Math.Sign(humidityTarget - _humidity) * _random.Next(0, 2);
         _humidity = Math.Clamp(_humidity, 20, 99);
 
-        // Wind: occasional direction shift, speed drift
         if (_random.Next(50) == 0)
         {
             _windDirectionIndex = (_windDirectionIndex + (_random.Next(2) == 0 ? -1 : 1) + WindDirections.Length) % WindDirections.Length;
@@ -160,19 +160,13 @@ public class WeatherWidget : IWidget
         _windSpeed += (_random.NextDouble() - 0.5) * 0.5;
         _windSpeed = Math.Clamp(_windSpeed, 5.0, 25.0);
 
-        // Rain chance based on weather state
         double rainTarget = _weatherState switch
         {
-            0 => 10.0,
-            1 => 35.0,
-            2 => 70.0,
-            3 => 92.0,
-            _ => 10.0
+            0 => 10.0, 1 => 35.0, 2 => 70.0, 3 => 92.0, _ => 10.0
         };
         _rainChance += (rainTarget - _rainChance) * 0.05 + (_random.NextDouble() - 0.5) * 2.0;
         _rainChance = Math.Clamp(_rainChance, 0.0, 100.0);
 
-        // Advance laps slowly (every ~30 ticks)
         if (_random.Next(30) == 0 && _currentLap < TotalLaps)
         {
             _currentLap++;
@@ -181,7 +175,71 @@ public class WeatherWidget : IWidget
 
     public WeatherData GetWeatherData()
     {
-        // Forecast: predict next state change
+        if (UseLiveData)
+        {
+            return GetLiveWeatherData();
+        }
+
+        return GetMockWeatherData();
+    }
+
+    private WeatherData GetLiveWeatherData()
+    {
+        var ts = _telemetryService!;
+
+        float trackTemp = ts.GetFloat("TrackTempCrew");
+        float airTemp = ts.GetFloat("AirTemp");
+        float windVel = ts.GetFloat("WindVel");
+        float windDir = ts.GetFloat("WindDir");
+        float humidity = ts.GetFloat("RelativeHumidity");
+        int skies = ts.GetInt("Skies");
+        int precipitation = ts.GetInt("Precipitation");
+
+        // Convert wind direction from radians to compass
+        double windDegrees = windDir * 180.0 / Math.PI;
+        if (windDegrees < 0) windDegrees += 360;
+        int windIdx = (int)Math.Round(windDegrees / 22.5) % 16;
+        string windDirection = WindDirections[windIdx];
+
+        // Map skies + precipitation to conditions string
+        string conditions;
+        if (precipitation > 0)
+        {
+            conditions = skies >= 2 ? "Heavy Rain" : "Light Rain";
+        }
+        else
+        {
+            conditions = skies switch
+            {
+                0 => "Clear",
+                1 => "Partly Cloudy",
+                2 => "Overcast",
+                3 => "Overcast",
+                _ => "Clear"
+            };
+        }
+
+        int currentLap = ts.GetInt("Lap");
+        int totalLaps = ts.SessionLaps;
+
+        return new WeatherData
+        {
+            Conditions = conditions,
+            TrackTempC = Math.Round(trackTemp, 1),
+            AirTempC = Math.Round(airTemp, 1),
+            HumidityPercent = (int)Math.Round(humidity),
+            WindSpeedKph = Math.Round(windVel * 3.6, 0),
+            WindDirection = windDirection,
+            RainChancePercent = precipitation > 0 ? 90 : skies >= 2 ? 40 : 10,
+            ForecastConditions = conditions, // use current as forecast
+            ForecastMinutes = -1,
+            CurrentLap = currentLap,
+            TotalLaps = totalLaps
+        };
+    }
+
+    private WeatherData GetMockWeatherData()
+    {
         string forecastConditions;
         int forecastMinutes;
 
@@ -198,7 +256,7 @@ public class WeatherWidget : IWidget
         else
         {
             forecastConditions = WeatherStates[_weatherState];
-            forecastMinutes = -1; // No change expected
+            forecastMinutes = -1;
         }
 
         return new WeatherData

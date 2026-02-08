@@ -2,12 +2,18 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\RaceOverlay.Core\RaceOverlay.Core.csproj" />
+    <ProjectReference Include="..\..\RaceOverlay.Engine\RaceOverlay.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="IRSDKSharper" />
   </ItemGroup>
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
   </PropertyGroup>
 
 </Project>

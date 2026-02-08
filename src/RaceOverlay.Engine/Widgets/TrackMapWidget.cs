@@ -1,3 +1,4 @@
+using RaceOverlay.Core.Services;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Engine.Models;
 
@@ -6,7 +7,7 @@ namespace RaceOverlay.Engine.Widgets;
 public class TrackMapConfig : ITrackMapConfig
 {
     public int UpdateIntervalMs { get; set; } = 50;
-    public bool UseMockData { get; set; } = true;
+    public bool UseMockData { get; set; } = false;
     public double OverlayLeft { get; set; } = double.NaN;
     public double OverlayTop { get; set; } = double.NaN;
     public bool ShowDriverNames { get; set; } = false;
@@ -21,6 +22,7 @@ public class TrackMapWidget : IWidget
     private readonly List<TrackMapDriver> _drivers = new();
     private readonly Random _random = new();
     private readonly double[] _driverSpeeds = new double[12];
+    private readonly ILiveTelemetryService? _telemetryService;
 
     public event Action? DataUpdated;
 
@@ -31,6 +33,9 @@ public class TrackMapWidget : IWidget
 
     public int CurrentLap { get; private set; } = 12;
     public int TotalLaps { get; private set; } = 24;
+
+    private bool UseLiveData => !_configuration.UseMockData
+                                && _telemetryService?.IsConnected == true;
 
     // Normalized track outline (0-1 range), roughly a D-shaped circuit
     public static readonly (double X, double Y)[] TrackOutline = new[]
@@ -50,9 +55,10 @@ public class TrackMapWidget : IWidget
         (0.30, 0.10), (0.30, 0.05),
     };
 
-    public TrackMapWidget()
+    public TrackMapWidget(ILiveTelemetryService? telemetryService = null)
     {
         _configuration = new TrackMapConfig();
+        _telemetryService = telemetryService;
     }
 
     public void UpdateConfiguration(IWidgetConfiguration configuration)
@@ -67,7 +73,10 @@ public class TrackMapWidget : IWidget
     {
         _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        InitializeMockData();
+        if (!UseLiveData)
+        {
+            InitializeMockData();
+        }
 
         _updateTask = UpdateLoopAsync(_cancellationTokenSource.Token);
         await Task.CompletedTask;
@@ -112,7 +121,7 @@ public class TrackMapWidget : IWidget
             ("A. Albon",      "#6366F1"),
         };
 
-        double baseSpeed = 0.003; // progress per tick (~60 ticks/sec at 50ms)
+        double baseSpeed = 0.003;
 
         for (int i = 0; i < driverData.Length; i++)
         {
@@ -122,12 +131,11 @@ public class TrackMapWidget : IWidget
             {
                 DriverName = name,
                 ClassColor = color,
-                TrackProgress = i * 0.07, // spread drivers around the track
+                TrackProgress = i * 0.07,
                 IsPlayer = name == "You",
                 IsInPit = false
             });
 
-            // Slightly different speed per driver
             _driverSpeeds[i] = baseSpeed + (_random.NextDouble() - 0.5) * 0.0006;
         }
     }
@@ -138,17 +146,13 @@ public class TrackMapWidget : IWidget
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                for (int i = 0; i < _drivers.Count; i++)
+                if (UseLiveData)
                 {
-                    _drivers[i].TrackProgress += _driverSpeeds[i];
-
-                    // Wrap at 1.0
-                    if (_drivers[i].TrackProgress >= 1.0)
-                        _drivers[i].TrackProgress -= 1.0;
-
-                    // Rare pit status toggle
-                    if (_random.Next(400) == 0)
-                        _drivers[i].IsInPit = !_drivers[i].IsInPit;
+                    UpdateLiveTrackMap();
+                }
+                else
+                {
+                    UpdateMockTrackMap();
                 }
 
                 DataUpdated?.Invoke();
@@ -158,6 +162,65 @@ public class TrackMapWidget : IWidget
         }
         catch (OperationCanceledException)
         {
+        }
+    }
+
+    private void UpdateMockTrackMap()
+    {
+        for (int i = 0; i < _drivers.Count; i++)
+        {
+            _drivers[i].TrackProgress += _driverSpeeds[i];
+
+            if (_drivers[i].TrackProgress >= 1.0)
+                _drivers[i].TrackProgress -= 1.0;
+
+            if (_random.Next(400) == 0)
+                _drivers[i].IsInPit = !_drivers[i].IsInPit;
+        }
+    }
+
+    private void UpdateLiveTrackMap()
+    {
+        var ts = _telemetryService!;
+        int playerCarIdx = ts.PlayerCarIdx;
+        int driverCount = ts.DriverCount;
+
+        CurrentLap = ts.GetInt("Lap");
+        TotalLaps = ts.SessionLaps;
+
+        // Gather active drivers
+        var liveDrivers = new List<(int carIdx, float lapDistPct, DriverSessionInfo info)>();
+
+        for (int i = 0; i < Math.Min(driverCount, 64); i++)
+        {
+            var driverInfo = ts.GetDriverInfo(i);
+            if (driverInfo == null || driverInfo.IsSpectator) continue;
+
+            float lapDistPct = ts.GetFloat("CarIdxLapDistPct", i);
+            if (lapDistPct < 0) continue;
+
+            int position = ts.GetInt("CarIdxPosition", i);
+            if (position <= 0 && i != playerCarIdx) continue;
+
+            liveDrivers.Add((i, lapDistPct, driverInfo));
+        }
+
+        // Resize _drivers list
+        while (_drivers.Count < liveDrivers.Count)
+            _drivers.Add(new TrackMapDriver());
+        while (_drivers.Count > liveDrivers.Count)
+            _drivers.RemoveAt(_drivers.Count - 1);
+
+        for (int i = 0; i < liveDrivers.Count; i++)
+        {
+            var (carIdx, lapDistPct, info) = liveDrivers[i];
+            var driver = _drivers[i];
+
+            driver.DriverName = info.UserName;
+            driver.ClassColor = $"#{info.CarClassColor:X6}";
+            driver.TrackProgress = lapDistPct;
+            driver.IsPlayer = carIdx == playerCarIdx;
+            driver.IsInPit = ts.GetBool("CarIdxOnPitRoad", carIdx);
         }
     }
 

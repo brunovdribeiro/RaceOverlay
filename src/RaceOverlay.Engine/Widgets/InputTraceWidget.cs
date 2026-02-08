@@ -1,3 +1,4 @@
+using RaceOverlay.Core.Services;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Engine.Models;
 
@@ -6,7 +7,7 @@ namespace RaceOverlay.Engine.Widgets;
 public class InputTraceConfig : IInputTraceConfig
 {
     public int UpdateIntervalMs { get; set; } = 16;
-    public bool UseMockData { get; set; } = true;
+    public bool UseMockData { get; set; } = false;
     public double OverlayLeft { get; set; } = double.NaN;
     public double OverlayTop { get; set; } = double.NaN;
     public string ThrottleColor { get; set; } = "#22C55E";
@@ -19,6 +20,7 @@ public class InputTraceWidget : IWidget
     private InputTraceConfig _configuration;
     private CancellationTokenSource? _cancellationTokenSource;
     private Task? _updateTask;
+    private readonly ILiveTelemetryService? _telemetryService;
 
     // Mock state
     private double _elapsed;
@@ -34,9 +36,13 @@ public class InputTraceWidget : IWidget
     public string Description => "Scrolling line chart of throttle and brake inputs over time.";
     public IWidgetConfiguration Configuration => _configuration;
 
-    public InputTraceWidget()
+    private bool UseLiveData => !_configuration.UseMockData
+                                && _telemetryService?.IsConnected == true;
+
+    public InputTraceWidget(ILiveTelemetryService? telemetryService = null)
     {
         _configuration = new InputTraceConfig();
+        _telemetryService = telemetryService;
     }
 
     public void UpdateConfiguration(IWidgetConfiguration configuration)
@@ -81,9 +87,18 @@ public class InputTraceWidget : IWidget
             {
                 _elapsed += _configuration.UpdateIntervalMs / 1000.0;
 
-                // Same sinusoidal mock data as InputsWidget
-                double throttle = Math.Max(0, Math.Sin(_elapsed * 1.2));
-                double brake = Math.Max(0, Math.Sin(_elapsed * 1.2 + Math.PI));
+                double throttle, brake;
+
+                if (UseLiveData)
+                {
+                    throttle = _telemetryService!.GetFloat("Throttle");
+                    brake = _telemetryService!.GetFloat("Brake");
+                }
+                else
+                {
+                    throttle = Math.Max(0, Math.Sin(_elapsed * 1.2));
+                    brake = Math.Max(0, Math.Sin(_elapsed * 1.2 + Math.PI));
+                }
 
                 int maxPoints = _configuration.HistorySeconds * 1000 / _configuration.UpdateIntervalMs;
 

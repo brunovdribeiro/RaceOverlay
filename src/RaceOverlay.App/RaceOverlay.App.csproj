@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\RaceOverlay.Core\RaceOverlay.Core.csproj" />
     <ProjectReference Include="..\RaceOverlay.Engine\RaceOverlay.Engine.csproj" />
+    <ProjectReference Include="..\Providers\RaceOverlay.Providers.iRacing\RaceOverlay.Providers.iRacing.csproj" />
   </ItemGroup>
 
   <ItemGroup>

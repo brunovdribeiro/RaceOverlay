@@ -1,15 +1,13 @@
+using RaceOverlay.Core.Services;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Engine.Models;
 
 namespace RaceOverlay.Engine.Widgets;
 
-/// <summary>
-/// Configuration implementation for the Lap Timer widget.
-/// </summary>
 public class LapTimerConfig : ILapTimerConfig
 {
     public int UpdateIntervalMs { get; set; } = 50;
-    public bool UseMockData { get; set; } = true;
+    public bool UseMockData { get; set; } = false;
     public double OverlayLeft { get; set; } = double.NaN;
     public double OverlayTop { get; set; } = double.NaN;
     public bool ShowDeltaToBest { get; set; } = true;
@@ -18,15 +16,12 @@ public class LapTimerConfig : ILapTimerConfig
     public bool ShowDeltaLastBest { get; set; } = true;
 }
 
-/// <summary>
-/// Lap Timer widget that displays the player's current, last, and best lap times with deltas.
-/// Mock data simulates a driver doing laps with realistic timing.
-/// </summary>
 public class LapTimerWidget : IWidget
 {
     private LapTimerConfig _configuration;
     private CancellationTokenSource? _cancellationTokenSource;
     private Task? _updateTask;
+    private readonly ILiveTelemetryService? _telemetryService;
     private readonly Random _random = new();
 
     private double _currentLapTime;
@@ -35,7 +30,7 @@ public class LapTimerWidget : IWidget
     private int _currentLap;
     private bool _isOutLap;
 
-    // Mock lap timing — target lap length varies per lap
+    // Mock lap timing
     private double _targetLapTime;
 
     public event Action? DataUpdated;
@@ -47,9 +42,13 @@ public class LapTimerWidget : IWidget
 
     public int TotalLaps { get; private set; } = 24;
 
-    public LapTimerWidget()
+    private bool UseLiveData => !_configuration.UseMockData
+                                && _telemetryService?.IsConnected == true;
+
+    public LapTimerWidget(ILiveTelemetryService? telemetryService = null)
     {
         _configuration = new LapTimerConfig();
+        _telemetryService = telemetryService;
     }
 
     public void UpdateConfiguration(IWidgetConfiguration configuration)
@@ -64,7 +63,10 @@ public class LapTimerWidget : IWidget
     {
         _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        InitializeMockData();
+        if (!UseLiveData)
+        {
+            InitializeMockData();
+        }
 
         _updateTask = UpdateLoopAsync(_cancellationTokenSource.Token);
         await Task.CompletedTask;
@@ -90,7 +92,6 @@ public class LapTimerWidget : IWidget
 
     private void InitializeMockData()
     {
-        // Simulate starting mid-race on an out lap
         _currentLap = 1;
         _currentLapTime = 0;
         _lastLapTime = 0;
@@ -101,7 +102,6 @@ public class LapTimerWidget : IWidget
 
     private double RandomLapTarget()
     {
-        // Random lap time between 88 and 96 seconds
         return 88.0 + _random.NextDouble() * 8.0;
     }
 
@@ -111,13 +111,15 @@ public class LapTimerWidget : IWidget
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                double tickSeconds = _configuration.UpdateIntervalMs / 1000.0;
-                _currentLapTime += tickSeconds;
-
-                // Check if the lap is "complete"
-                if (_currentLapTime >= _targetLapTime)
+                if (!UseLiveData)
                 {
-                    CompleteLap();
+                    double tickSeconds = _configuration.UpdateIntervalMs / 1000.0;
+                    _currentLapTime += tickSeconds;
+
+                    if (_currentLapTime >= _targetLapTime)
+                    {
+                        CompleteMockLap();
+                    }
                 }
 
                 DataUpdated?.Invoke();
@@ -130,7 +132,7 @@ public class LapTimerWidget : IWidget
         }
     }
 
-    private void CompleteLap()
+    private void CompleteMockLap()
     {
         double completedTime = _currentLapTime;
 
@@ -152,10 +154,53 @@ public class LapTimerWidget : IWidget
 
     public LapTimerData GetLapTimerData()
     {
+        if (UseLiveData)
+        {
+            return GetLiveLapTimerData();
+        }
+
+        return GetMockLapTimerData();
+    }
+
+    private LapTimerData GetLiveLapTimerData()
+    {
+        var ts = _telemetryService!;
+
+        float currentLapTime = ts.GetFloat("LapCurrentLapTime");
+        float lastLapTime = ts.GetFloat("LapLastLapTime");
+        float bestLapTime = ts.GetFloat("LapBestLapTime");
+        float deltaToBest = ts.GetFloat("LapDeltaToBestLap");
+        int currentLap = ts.GetInt("Lap");
+        bool onPitRoad = ts.GetBool("OnPitRoad");
+
+        int totalLaps = ts.SessionLaps;
+
+        double deltaLastBest = 0;
+        if (lastLapTime > 0 && bestLapTime > 0)
+        {
+            deltaLastBest = lastLapTime - bestLapTime;
+        }
+
+        bool isOutLap = currentLapTime <= 0 || onPitRoad;
+
+        return new LapTimerData
+        {
+            CurrentLapTime = currentLapTime,
+            LastLapTime = lastLapTime,
+            BestLapTime = bestLapTime,
+            DeltaToBest = deltaToBest,
+            DeltaLastBest = deltaLastBest,
+            CurrentLap = currentLap,
+            TotalLaps = totalLaps,
+            IsOutLap = isOutLap
+        };
+    }
+
+    private LapTimerData GetMockLapTimerData()
+    {
         double deltaToBest = 0;
         if (_bestLapTime > 0 && !_isOutLap)
         {
-            // Project delta: how much slower/faster we are compared to best at this point in the lap
             deltaToBest = _currentLapTime - (_bestLapTime * (_currentLapTime / _targetLapTime));
         }
 

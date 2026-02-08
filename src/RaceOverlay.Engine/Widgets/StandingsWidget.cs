@@ -1,15 +1,13 @@
+using RaceOverlay.Core.Services;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Engine.Models;
 
 namespace RaceOverlay.Engine.Widgets;
 
-/// <summary>
-/// Configuration implementation for the Standings widget.
-/// </summary>
 public class StandingsConfig : IStandingsConfig
 {
     public int UpdateIntervalMs { get; set; } = 500;
-    public bool UseMockData { get; set; } = true;
+    public bool UseMockData { get; set; } = false;
     public double OverlayLeft { get; set; } = double.NaN;
     public double OverlayTop { get; set; } = double.NaN;
     public bool ShowClassColor { get; set; } = true;
@@ -26,10 +24,6 @@ public class StandingsConfig : IStandingsConfig
     public int MaxDrivers { get; set; } = 20;
 }
 
-/// <summary>
-/// Standings widget that displays a full race leaderboard sorted by overall position.
-/// Shows all drivers with gaps, class colors, and highlights the player's row.
-/// </summary>
 public class StandingsWidget : IWidget
 {
     private StandingsConfig _configuration;
@@ -37,6 +31,7 @@ public class StandingsWidget : IWidget
     private Task? _updateTask;
     private List<StandingDriver> _drivers = new();
     private readonly Random _random = new();
+    private readonly ILiveTelemetryService? _telemetryService;
 
     public event Action? DataUpdated;
 
@@ -48,9 +43,13 @@ public class StandingsWidget : IWidget
     public int CurrentLap { get; private set; } = 12;
     public int TotalLaps { get; private set; } = 24;
 
-    public StandingsWidget()
+    private bool UseLiveData => !_configuration.UseMockData
+                                && _telemetryService?.IsConnected == true;
+
+    public StandingsWidget(ILiveTelemetryService? telemetryService = null)
     {
         _configuration = new StandingsConfig();
+        _telemetryService = telemetryService;
     }
 
     public void UpdateConfiguration(IWidgetConfiguration configuration)
@@ -65,7 +64,10 @@ public class StandingsWidget : IWidget
     {
         _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        InitializeMockData();
+        if (!UseLiveData)
+        {
+            InitializeMockData();
+        }
 
         _updateTask = UpdateLoopAsync(_cancellationTokenSource.Token);
         await Task.CompletedTask;
@@ -94,7 +96,6 @@ public class StandingsWidget : IWidget
     {
         _drivers.Clear();
 
-        // (name, class, classColor, carNumber, startingPos, license, licenseColor, iRating, carBrand)
         var driverData = new (string name, string cls, string clsColor, string carNum, int startPos,
             string license, string licColor, int iRating, string carBrand)[]
         {
@@ -147,7 +148,6 @@ public class StandingsWidget : IWidget
             });
         }
 
-        // Compute interval and delta
         RecomputeDerivedFields();
     }
 
@@ -160,13 +160,11 @@ public class StandingsWidget : IWidget
         {
             var driver = _drivers[i];
 
-            // Interval: gap to car directly ahead
             if (i == 0)
                 driver.Interval = 0;
             else
                 driver.Interval = driver.GapToLeader - _drivers[i - 1].GapToLeader;
 
-            // Delta: relative to player's last lap
             if (driver.IsPlayer)
                 driver.Delta = 0;
             else
@@ -180,33 +178,14 @@ public class StandingsWidget : IWidget
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                foreach (var driver in _drivers)
+                if (UseLiveData)
                 {
-                    // Slight drift in best lap time
-                    driver.BestLapTime += (_random.NextDouble() - 0.5) * 0.05;
-
-                    // Slight drift in last lap time
-                    driver.LastLapTime += (_random.NextDouble() - 0.5) * 0.08;
-
-                    // Slight drift in gap (leader stays at 0)
-                    if (driver.Position > 1)
-                    {
-                        driver.GapToLeader += (_random.NextDouble() - 0.5) * 0.15;
-                        if (driver.GapToLeader < 0.1) driver.GapToLeader = 0.1;
-                    }
-
-                    // Slight drift in iRating gain
-                    driver.IRatingGain += _random.Next(-2, 3);
-                    if (driver.IRatingGain > 80) driver.IRatingGain = 80;
-                    if (driver.IRatingGain < -80) driver.IRatingGain = -80;
-
-                    // Rare pit status toggle
-                    if (_random.Next(200) == 0)
-                        driver.IsInPit = !driver.IsInPit;
+                    UpdateLiveStandings();
                 }
-
-                // Recompute interval and delta each tick
-                RecomputeDerivedFields();
+                else
+                {
+                    UpdateMockStandings();
+                }
 
                 DataUpdated?.Invoke();
 
@@ -215,6 +194,129 @@ public class StandingsWidget : IWidget
         }
         catch (OperationCanceledException)
         {
+        }
+    }
+
+    private void UpdateMockStandings()
+    {
+        foreach (var driver in _drivers)
+        {
+            driver.BestLapTime += (_random.NextDouble() - 0.5) * 0.05;
+            driver.LastLapTime += (_random.NextDouble() - 0.5) * 0.08;
+
+            if (driver.Position > 1)
+            {
+                driver.GapToLeader += (_random.NextDouble() - 0.5) * 0.15;
+                if (driver.GapToLeader < 0.1) driver.GapToLeader = 0.1;
+            }
+
+            driver.IRatingGain += _random.Next(-2, 3);
+            if (driver.IRatingGain > 80) driver.IRatingGain = 80;
+            if (driver.IRatingGain < -80) driver.IRatingGain = -80;
+
+            if (_random.Next(200) == 0)
+                driver.IsInPit = !driver.IsInPit;
+        }
+
+        RecomputeDerivedFields();
+    }
+
+    private void UpdateLiveStandings()
+    {
+        var ts = _telemetryService!;
+        int playerCarIdx = ts.PlayerCarIdx;
+        int driverCount = ts.DriverCount;
+
+        CurrentLap = ts.GetInt("Lap");
+        TotalLaps = ts.SessionLaps;
+
+        // Build list of active drivers with positions
+        var liveDrivers = new List<(int carIdx, int position, DriverSessionInfo info)>();
+
+        for (int i = 0; i < Math.Min(driverCount, 64); i++)
+        {
+            var driverInfo = ts.GetDriverInfo(i);
+            if (driverInfo == null || driverInfo.IsSpectator) continue;
+
+            int position = ts.GetInt("CarIdxPosition", i);
+            if (position <= 0) continue; // not on track / not classified
+
+            liveDrivers.Add((i, position, driverInfo));
+        }
+
+        // Sort by position
+        liveDrivers.Sort((a, b) => a.position.CompareTo(b.position));
+
+        // Resize _drivers list to match
+        while (_drivers.Count < liveDrivers.Count)
+            _drivers.Add(new StandingDriver());
+        while (_drivers.Count > liveDrivers.Count)
+            _drivers.RemoveAt(_drivers.Count - 1);
+
+        double leaderF2Time = 0;
+        double playerLastLap = 0;
+
+        for (int i = 0; i < liveDrivers.Count; i++)
+        {
+            var (carIdx, position, info) = liveDrivers[i];
+            var driver = _drivers[i];
+
+            driver.Position = position;
+            driver.DriverName = info.UserName;
+            driver.VehicleClass = info.CarClassShortName;
+            driver.ClassColor = $"#{info.CarClassColor:X6}";
+            driver.CarNumber = info.CarNumber;
+            driver.LicenseClass = info.LicString;
+            driver.LicenseColor = $"#{info.LicColor:X6}";
+            driver.IRating = info.IRating;
+            driver.CarBrand = info.CarScreenNameShort;
+            driver.IsPlayer = carIdx == playerCarIdx;
+            driver.IsInPit = ts.GetBool("CarIdxOnPitRoad", carIdx);
+
+            float bestLapTime = ts.GetFloat("CarIdxBestLapTime", carIdx);
+            float lastLapTime = ts.GetFloat("CarIdxLastLapTime", carIdx);
+            float f2Time = ts.GetFloat("CarIdxF2Time", carIdx);
+
+            driver.BestLapTime = bestLapTime > 0 ? bestLapTime : 0;
+            driver.LastLapTime = lastLapTime > 0 ? lastLapTime : 0;
+
+            // Gap to leader from F2Time
+            if (i == 0)
+            {
+                leaderF2Time = f2Time;
+                driver.GapToLeader = 0;
+            }
+            else
+            {
+                driver.GapToLeader = f2Time > 0 ? f2Time : 0;
+            }
+
+            // Interval to car ahead
+            if (i == 0)
+            {
+                driver.Interval = 0;
+            }
+            else
+            {
+                float prevF2Time = ts.GetFloat("CarIdxF2Time", liveDrivers[i - 1].carIdx);
+                driver.Interval = f2Time - prevF2Time;
+            }
+
+            if (driver.IsPlayer)
+            {
+                playerLastLap = driver.LastLapTime;
+            }
+        }
+
+        // Compute delta relative to player
+        foreach (var driver in _drivers)
+        {
+            if (driver.IsPlayer)
+                driver.Delta = 0;
+            else if (playerLastLap > 0 && driver.LastLapTime > 0)
+                driver.Delta = driver.LastLapTime - playerLastLap;
+            else
+                driver.Delta = 0;
         }
     }
 
