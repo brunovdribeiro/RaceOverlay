@@ -50,6 +50,9 @@ public partial class App : Application
         var mainWindow = _host.Services.GetRequiredService<MainWindow>();
         mainWindow.Show();
 
+        // Restore previously saved widget configuration
+        _ = mainWindow.GetViewModel().LoadAndRestoreConfiguration();
+
         base.OnStartup(e);
     }
 

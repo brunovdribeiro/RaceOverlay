@@ -44,6 +44,13 @@ public partial class MainWindow : Window
         {
             WidgetDragService.Instance.ToggleDragging();
             UpdateDragModeIndicator();
+
+            // Save positions when drag mode is disabled (positions finalized)
+            if (!WidgetDragService.Instance.IsDraggingEnabled)
+            {
+                _viewModel.SaveConfiguration();
+            }
+
             e.Handled = true;
         }
     }

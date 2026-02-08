@@ -16,6 +16,7 @@ public partial class MainWindowViewModel : ObservableObject
 {
     private readonly IWidgetRegistry _widgetRegistry;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ConfigurationPersistenceService _persistenceService = new();
     private readonly Dictionary<string, IWidget> _activeWidgets = new();
     private readonly Dictionary<string, WidgetOverlayWindow> _activeWindows = new();
     private readonly Dictionary<string, IWidgetConfiguration> _savedConfigs = new();
@@ -990,6 +991,8 @@ public partial class MainWindowViewModel : ObservableObject
 
             // Show the overlay window
             ShowWidgetOverlay(widgetInstance, SelectedWidget.DisplayName, instanceId);
+
+            SaveConfiguration();
         }
         catch (Exception ex)
         {
@@ -1120,6 +1123,8 @@ public partial class MainWindowViewModel : ObservableObject
         {
             await RemoveWidgetInstance(instanceId);
         }
+
+        SaveConfiguration();
     }
 
     /// <summary>
@@ -1143,5 +1148,64 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Saves the current widget configuration and active widgets to disk.
+    /// </summary>
+    public void SaveConfiguration()
+    {
+        var activeWidgetIds = _activeWidgets.Values
+            .Select(w => w.WidgetId)
+            .Distinct()
+            .ToList();
+
+        _persistenceService.Save(_savedConfigs, activeWidgetIds);
+    }
+
+    /// <summary>
+    /// Loads saved configuration from disk and restores previously active widgets.
+    /// </summary>
+    public async Task LoadAndRestoreConfiguration()
+    {
+        var state = _persistenceService.Load();
+        if (state == null)
+            return;
+
+        // Restore saved configs
+        foreach (var (widgetId, element) in state.WidgetConfigs)
+        {
+            var config = _persistenceService.DeserializeConfig(widgetId, element);
+            if (config != null)
+            {
+                _savedConfigs[widgetId] = config;
+            }
+        }
+
+        // Restore active widgets
+        var registeredWidgets = _widgetRegistry.GetRegisteredWidgets().ToList();
+        foreach (var widgetId in state.ActiveWidgets)
+        {
+            var metadata = registeredWidgets.FirstOrDefault(w => w.WidgetId == widgetId);
+            if (metadata == null)
+                continue;
+
+            try
+            {
+                var widgetInstance = _serviceProvider.GetService(metadata.WidgetType) as IWidget;
+                if (widgetInstance == null)
+                    continue;
+
+                string instanceId = $"{widgetId}-{Guid.NewGuid():N}";
+                _activeWidgets[instanceId] = widgetInstance;
+
+                await widgetInstance.StartAsync();
+                ShowWidgetOverlay(widgetInstance, metadata.DisplayName, instanceId);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error restoring widget {widgetId}: {ex.Message}");
+            }
+        }
     }
 }
