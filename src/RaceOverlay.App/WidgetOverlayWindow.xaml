@@ -20,6 +20,14 @@
         <ContentControl x:Name="WidgetContent" />
 
         <!-- Layer 1: Transparent drag overlay (shown only in drag mode) -->
-        <Border x:Name="DragOverlay" Background="Transparent" Visibility="Collapsed" />
+        <Border x:Name="DragOverlay" Background="Transparent" Visibility="Collapsed">
+            <TextBlock x:Name="DragModeText"
+                       Text="Drag Mode"
+                       Foreground="White"
+                       FontSize="14"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Opacity="0.6" />
+        </Border>
     </Grid>
 </Window>

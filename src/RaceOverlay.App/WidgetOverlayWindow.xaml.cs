@@ -14,8 +14,6 @@ namespace RaceOverlay.App;
 /// </summary>
 public partial class WidgetOverlayWindow : Window
 {
-    private bool _isDragging;
-    private Point _dragStartPoint;
     private bool _isDraggingEnabled;
     private RelativeOverlay? _relativeOverlay;
     private RelativeOverlayViewModel? _viewModel;
@@ -275,6 +273,7 @@ public partial class WidgetOverlayWindow : Window
 
     private void OnRelativeDataUpdated()
     {
+
         if (_relativeOverlay == null || _viewModel == null) return;
 
         var overlay = _relativeOverlay;
@@ -284,6 +283,7 @@ public partial class WidgetOverlayWindow : Window
 
     private void OnFuelDataUpdated()
     {
+
         if (_fuelCalculator == null || _fuelCalcViewModel == null) return;
 
         var calc = _fuelCalculator;
@@ -293,6 +293,7 @@ public partial class WidgetOverlayWindow : Window
 
     private void OnInputsDataUpdated()
     {
+
         if (_inputsWidget == null || _inputsViewModel == null) return;
 
         var widget = _inputsWidget;
@@ -302,6 +303,7 @@ public partial class WidgetOverlayWindow : Window
 
     private void OnInputTraceDataUpdated()
     {
+
         if (_inputTraceWidget == null || _inputTraceViewModel == null) return;
 
         var widget = _inputTraceWidget;
@@ -311,6 +313,7 @@ public partial class WidgetOverlayWindow : Window
 
     private void OnStandingsDataUpdated()
     {
+
         if (_standingsWidget == null || _standingsViewModel == null) return;
 
         var widget = _standingsWidget;
@@ -320,6 +323,7 @@ public partial class WidgetOverlayWindow : Window
 
     private void OnLapTimerDataUpdated()
     {
+
         if (_lapTimerWidget == null || _lapTimerViewModel == null) return;
 
         var widget = _lapTimerWidget;
@@ -329,6 +333,7 @@ public partial class WidgetOverlayWindow : Window
 
     private void OnTrackMapDataUpdated()
     {
+
         if (_trackMapWidget == null || _trackMapViewModel == null) return;
 
         var widget = _trackMapWidget;
@@ -339,6 +344,7 @@ public partial class WidgetOverlayWindow : Window
 
     private void OnWeatherDataUpdated()
     {
+
         if (_weatherWidget == null || _weatherViewModel == null) return;
 
         var widget = _weatherWidget;
@@ -355,62 +361,88 @@ public partial class WidgetOverlayWindow : Window
 
         if (enabled)
         {
-            // Show drag overlay on top, block hit-testing on widget content
+            // Unsubscribe from data updates to eliminate all background work
+            UnsubscribeDataUpdated();
+
+            // Hide widget content but keep layout so window retains its size/boundary
+            WidgetContent.Visibility = Visibility.Hidden;
+
+            // Show drag overlay with "Drag Mode" message
             DragOverlay.Visibility = Visibility.Visible;
             DragOverlay.Background = new SolidColorBrush(Color.FromArgb(0x20, 0xFF, 0xFF, 0xFF));
-            WidgetContent.IsHitTestVisible = false;
 
             DragOverlay.MouseLeftButtonDown += DragOverlay_MouseLeftButtonDown;
-            DragOverlay.MouseMove += DragOverlay_MouseMove;
-            DragOverlay.MouseLeftButtonUp += DragOverlay_MouseLeftButtonUp;
             DragOverlay.Cursor = System.Windows.Input.Cursors.SizeAll;
         }
         else
         {
-            // Hide drag overlay, restore hit-testing on widget content
+            // Hide drag overlay, restore widget content
             DragOverlay.Visibility = Visibility.Collapsed;
             DragOverlay.Background = Brushes.Transparent;
-            WidgetContent.IsHitTestVisible = true;
+            WidgetContent.Visibility = Visibility.Visible;
 
             DragOverlay.MouseLeftButtonDown -= DragOverlay_MouseLeftButtonDown;
-            DragOverlay.MouseMove -= DragOverlay_MouseMove;
-            DragOverlay.MouseLeftButtonUp -= DragOverlay_MouseLeftButtonUp;
             DragOverlay.Cursor = System.Windows.Input.Cursors.Arrow;
-            _isDragging = false;
+
+            // Refresh data once, then resubscribe for live updates
+            RefreshWidgetData();
+            SubscribeDataUpdated();
         }
+    }
+
+    private void RefreshWidgetData()
+    {
+        if (_relativeOverlay != null && _viewModel != null)
+            _viewModel.RefreshDrivers(_relativeOverlay.GetRelativeDrivers());
+        else if (_fuelCalculator != null && _fuelCalcViewModel != null)
+            _fuelCalcViewModel.UpdateFuelData(_fuelCalculator.GetFuelData());
+        else if (_inputsWidget != null && _inputsViewModel != null)
+            _inputsViewModel.UpdateInputsData(_inputsWidget.GetInputsData());
+        else if (_inputTraceWidget != null && _inputTraceViewModel != null)
+            _inputTraceViewModel.UpdateTrace(_inputTraceWidget.GetTraceHistory());
+        else if (_standingsWidget != null && _standingsViewModel != null)
+            _standingsViewModel.UpdateStandings(_standingsWidget.GetStandings(), _standingsWidget.CurrentLap, _standingsWidget.TotalLaps);
+        else if (_lapTimerWidget != null && _lapTimerViewModel != null)
+            _lapTimerViewModel.UpdateLapData(_lapTimerWidget.GetLapTimerData());
+        else if (_trackMapWidget != null && _trackMapViewModel != null)
+        {
+            _trackMapViewModel.TrackOutline = _trackMapWidget.GetTrackOutline();
+            var data = _trackMapWidget.GetTrackMapData();
+            _trackMapViewModel.UpdateMap(data.Drivers, data.CurrentLap, data.TotalLaps);
+        }
+        else if (_weatherWidget != null && _weatherViewModel != null)
+            _weatherViewModel.UpdateWeather(_weatherWidget.GetWeatherData());
+    }
+
+    private void SubscribeDataUpdated()
+    {
+        if (_relativeOverlay != null) _relativeOverlay.DataUpdated += OnRelativeDataUpdated;
+        if (_fuelCalculator != null) _fuelCalculator.DataUpdated += OnFuelDataUpdated;
+        if (_inputsWidget != null) _inputsWidget.DataUpdated += OnInputsDataUpdated;
+        if (_inputTraceWidget != null) _inputTraceWidget.DataUpdated += OnInputTraceDataUpdated;
+        if (_standingsWidget != null) _standingsWidget.DataUpdated += OnStandingsDataUpdated;
+        if (_lapTimerWidget != null) _lapTimerWidget.DataUpdated += OnLapTimerDataUpdated;
+        if (_trackMapWidget != null) _trackMapWidget.DataUpdated += OnTrackMapDataUpdated;
+        if (_weatherWidget != null) _weatherWidget.DataUpdated += OnWeatherDataUpdated;
+    }
+
+    private void UnsubscribeDataUpdated()
+    {
+        if (_relativeOverlay != null) _relativeOverlay.DataUpdated -= OnRelativeDataUpdated;
+        if (_fuelCalculator != null) _fuelCalculator.DataUpdated -= OnFuelDataUpdated;
+        if (_inputsWidget != null) _inputsWidget.DataUpdated -= OnInputsDataUpdated;
+        if (_inputTraceWidget != null) _inputTraceWidget.DataUpdated -= OnInputTraceDataUpdated;
+        if (_standingsWidget != null) _standingsWidget.DataUpdated -= OnStandingsDataUpdated;
+        if (_lapTimerWidget != null) _lapTimerWidget.DataUpdated -= OnLapTimerDataUpdated;
+        if (_trackMapWidget != null) _trackMapWidget.DataUpdated -= OnTrackMapDataUpdated;
+        if (_weatherWidget != null) _weatherWidget.DataUpdated -= OnWeatherDataUpdated;
     }
 
     private void DragOverlay_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (_isDraggingEnabled)
         {
-            _isDragging = true;
-            _dragStartPoint = e.GetPosition(null);
-            DragOverlay.CaptureMouse();
-        }
-    }
-
-    private void DragOverlay_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        if (_isDragging && _isDraggingEnabled)
-        {
-            Point currentPosition = e.GetPosition(null);
-            double deltaX = currentPosition.X - _dragStartPoint.X;
-            double deltaY = currentPosition.Y - _dragStartPoint.Y;
-
-            Left += deltaX;
-            Top += deltaY;
-
-            _dragStartPoint = currentPosition;
-        }
-    }
-
-    private void DragOverlay_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
-    {
-        if (_isDragging)
-        {
-            _isDragging = false;
-            DragOverlay.ReleaseMouseCapture();
+            DragMove();
         }
     }
 
@@ -421,46 +453,7 @@ public partial class WidgetOverlayWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
-        // Unsubscribe from data updates
-        if (_relativeOverlay != null)
-        {
-            _relativeOverlay.DataUpdated -= OnRelativeDataUpdated;
-        }
-
-        if (_fuelCalculator != null)
-        {
-            _fuelCalculator.DataUpdated -= OnFuelDataUpdated;
-        }
-
-        if (_inputsWidget != null)
-        {
-            _inputsWidget.DataUpdated -= OnInputsDataUpdated;
-        }
-
-        if (_inputTraceWidget != null)
-        {
-            _inputTraceWidget.DataUpdated -= OnInputTraceDataUpdated;
-        }
-
-        if (_standingsWidget != null)
-        {
-            _standingsWidget.DataUpdated -= OnStandingsDataUpdated;
-        }
-
-        if (_lapTimerWidget != null)
-        {
-            _lapTimerWidget.DataUpdated -= OnLapTimerDataUpdated;
-        }
-
-        if (_trackMapWidget != null)
-        {
-            _trackMapWidget.DataUpdated -= OnTrackMapDataUpdated;
-        }
-
-        if (_weatherWidget != null)
-        {
-            _weatherWidget.DataUpdated -= OnWeatherDataUpdated;
-        }
+        UnsubscribeDataUpdated();
 
         // Unregister from drag service
         WidgetDragService.Instance.UnregisterWindow(this);
