@@ -26,7 +26,7 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $tag = git describe --tags --match "v*" --exact-match 2>$null
+          $tag = git tag --points-at HEAD | Where-Object { $_ -match '^v\d' } | Select-Object -First 1
           if ($tag) {
             $version = $tag -replace '^v', ''
           } else {
@@ -91,7 +91,7 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $tag = git describe --tags --match "v*" --exact-match 2>$null
+          $tag = git tag --points-at HEAD | Where-Object { $_ -match '^v\d' } | Select-Object -First 1
           if ($tag) {
             $version = $tag -replace '^v', ''
           } else {
