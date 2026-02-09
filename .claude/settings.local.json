@@ -13,7 +13,9 @@
       "Bash(gh api:*)",
       "WebFetch(domain:api.github.com)",
       "Bash(dotnet restore:*)",
-      "Bash(ls \"C:\\\\Sources\\\\RaceOverlay\\\\src\\\\RaceOverlay.App\\\\Models\"\" 2>nul || echo \"Directory does not exist \")"
+      "Bash(ls \"C:\\\\Sources\\\\RaceOverlay\\\\src\\\\RaceOverlay.App\\\\Models\"\" 2>nul || echo \"Directory does not exist \")",
+      "Bash(dotnet msbuild:*)",
+      "Bash(powershell -Command:*)"
     ]
   }
 }

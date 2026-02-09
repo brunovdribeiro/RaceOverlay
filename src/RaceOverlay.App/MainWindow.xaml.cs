@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Windows;
 using System.Windows.Input;
 using RaceOverlay.App.ViewModels;
@@ -17,6 +18,11 @@ public partial class MainWindow : Window
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = viewModel;
+
+        var version = Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
+        Title = $"RaceOverlay v{version}";
+
         Loaded += MainWindow_Loaded;
         Closing += MainWindow_Closing;
     }
@@ -32,7 +38,7 @@ public partial class MainWindow : Window
         _notifyIcon = new Forms.NotifyIcon
         {
             Icon = CreateTrayIcon(),
-            Text = "RaceOverlay",
+            Text = Title,
             Visible = true
         };
 

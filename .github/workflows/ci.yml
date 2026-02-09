@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
 
@@ -12,12 +13,28 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
           dotnet-quality: 'preview'
+
+      - name: Compute version
+        id: version
+        shell: pwsh
+        run: |
+          $tag = git describe --tags --match "v*" --exact-match 2>$null
+          if ($tag) {
+            $version = $tag -replace '^v', ''
+          } else {
+            $baseVersion = Select-Xml -Path Directory.Build.props -XPath '//Version' | ForEach-Object { $_.Node.InnerText }
+            $version = "$baseVersion.ci.${{ github.run_number }}"
+          }
+          Write-Host "Version: $version"
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
 
       - name: Restore dependencies
         run: |
@@ -26,7 +43,7 @@ jobs:
 
       - name: Build
         run: |
-          dotnet build src/RaceOverlay.App/RaceOverlay.App.csproj --no-restore --configuration Release
+          dotnet build src/RaceOverlay.App/RaceOverlay.App.csproj --no-restore --configuration Release -p:Version=${{ steps.version.outputs.VERSION }}
           dotnet build tests/RaceOverlay.E2E.Tests/RaceOverlay.E2E.Tests.csproj --no-restore --configuration Release
 
   unit-tests:
@@ -61,6 +78,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -68,8 +87,21 @@ jobs:
           dotnet-version: '10.0.x'
           dotnet-quality: 'preview'
 
+      - name: Compute version
+        id: version
+        shell: pwsh
+        run: |
+          $tag = git describe --tags --match "v*" --exact-match 2>$null
+          if ($tag) {
+            $version = $tag -replace '^v', ''
+          } else {
+            $baseVersion = Select-Xml -Path Directory.Build.props -XPath '//Version' | ForEach-Object { $_.Node.InnerText }
+            $version = "$baseVersion.ci.${{ github.run_number }}"
+          }
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+
       - name: Build app for E2E
-        run: dotnet build src/RaceOverlay.App/RaceOverlay.App.csproj --configuration Debug
+        run: dotnet build src/RaceOverlay.App/RaceOverlay.App.csproj --configuration Debug -p:Version=${{ steps.version.outputs.VERSION }}
 
       - name: Run E2E Tests
         run: dotnet test tests/RaceOverlay.E2E.Tests/RaceOverlay.E2E.Tests.csproj --configuration Debug --verbosity normal --logger "trx;LogFileName=e2e-results.trx"
