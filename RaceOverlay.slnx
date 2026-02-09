@@ -11,6 +11,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/RaceOverlay.Core.Tests/RaceOverlay.Core.Tests.csproj" />
+    <Project Path="tests/RaceOverlay.E2E.Tests/RaceOverlay.E2E.Tests.csproj" />
     <Project Path="tests/RaceOverlay.Engine.Tests/RaceOverlay.Engine.Tests.csproj" />
     <Project Path="tests/RaceOverlay.Providers.Tests/RaceOverlay.Providers.Tests.csproj" />
   </Folder>

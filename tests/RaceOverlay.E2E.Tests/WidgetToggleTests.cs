@@ -1,64 +1,43 @@
-using FlaUI.Core;
-using FlaUI.Core.AutomationElements;
-using FlaUI.Core.Conditions;
-using FlaUI.Core.Definitions;
 using FlaUI.Core.Tools;
 
 namespace RaceOverlay.E2E.Tests;
 
-public class WidgetToggleTests : IClassFixture<AppFixture>
+[Collection("App")]
+public class WidgetToggleTests
 {
     private readonly AppFixture _fixture;
 
-    public WidgetToggleTests(AppFixture fixture)
-    {
-        _fixture = fixture;
-    }
+    public WidgetToggleTests(AppFixture fixture) => _fixture = fixture;
 
-    [Fact]
-    public void RelativeOverlay_EnableToggle_ShowsOverlayWindow()
+    [Theory]
+    [InlineData(WidgetNames.RelativeOverlay)]
+    [InlineData(WidgetNames.FuelCalculator)]
+    [InlineData(WidgetNames.Inputs)]
+    [InlineData(WidgetNames.InputTrace)]
+    [InlineData(WidgetNames.Standings)]
+    [InlineData(WidgetNames.LapTimer)]
+    [InlineData(WidgetNames.TrackMap)]
+    [InlineData(WidgetNames.Weather)]
+    public void EnableToggle_ShowsOverlayWindow_DisableToggle_HidesIt(string widgetName)
     {
         var mainWindow = _fixture.GetMainWindow();
-
-        // Find the "Relative Overlay" label in the widget library
-        var label = mainWindow.FindFirstDescendant(cf => cf.ByText("Relative Overlay"));
-        Assert.NotNull(label);
-
-        // The toggle is a sibling in the same DockPanel (the label's parent)
-        var container = label.Parent;
-        Assert.NotNull(container);
-        var toggle = container.FindFirstDescendant(cf => cf.ByControlType(ControlType.Button));
+        var toggle = _fixture.FindWidgetToggle(mainWindow, widgetName);
         Assert.NotNull(toggle);
 
-        // Enable the widget
+        // Enable
         toggle.Click();
+        Retry.WhileFalse(
+            () => _fixture.FindOverlayWindow(widgetName) != null,
+            timeout: Waits.OverlayTimeout,
+            interval: Waits.RetryInterval);
+        Assert.NotNull(_fixture.FindOverlayWindow(widgetName));
 
-        // Wait for the overlay window titled "Relative Overlay" to appear
-        var overlayFound = Retry.WhileFalse(
-            () => FindOverlayWindow("Relative Overlay") != null,
-            timeout: TimeSpan.FromSeconds(5),
-            interval: TimeSpan.FromMilliseconds(250));
-
-        var overlayWindow = FindOverlayWindow("Relative Overlay");
-        Assert.NotNull(overlayWindow);
-
-        // Disable the widget
+        // Disable
         toggle.Click();
-
-        // Wait for the overlay window to disappear
-        var overlayGone = Retry.WhileTrue(
-            () => FindOverlayWindow("Relative Overlay") != null,
-            timeout: TimeSpan.FromSeconds(5),
-            interval: TimeSpan.FromMilliseconds(250));
-
-        var overlayAfterDisable = FindOverlayWindow("Relative Overlay");
-        Assert.Null(overlayAfterDisable);
-    }
-
-    private Window? FindOverlayWindow(string title)
-    {
-        // Overlay windows are top-level windows owned by the same process
-        var allWindows = _fixture.App.GetAllTopLevelWindows(_fixture.Automation);
-        return allWindows.FirstOrDefault(w => w.Title == title);
+        Retry.WhileTrue(
+            () => _fixture.FindOverlayWindow(widgetName) != null,
+            timeout: Waits.OverlayTimeout,
+            interval: Waits.RetryInterval);
+        Assert.Null(_fixture.FindOverlayWindow(widgetName));
     }
 }
