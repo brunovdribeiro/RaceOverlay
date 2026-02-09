@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RaceOverlay.App.Models;
 using RaceOverlay.App.Services;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Engine.Widgets;
@@ -8,10 +10,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace RaceOverlay.App.ViewModels;
 
-/// <summary>
-/// ViewModel for the main window that manages widget selection and configuration.
-/// Uses MVVM Toolkit for observable properties and relay commands.
-/// </summary>
 public partial class MainWindowViewModel : ObservableObject
 {
     private readonly IWidgetRegistry _widgetRegistry;
@@ -20,18 +18,40 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly Dictionary<string, IWidget> _activeWidgets = new();
     private readonly Dictionary<string, WidgetOverlayWindow> _activeWindows = new();
     private readonly Dictionary<string, IWidgetConfiguration> _savedConfigs = new();
+    private bool _isRestoring;
+
+    private static readonly Dictionary<string, string> WidgetIconKeys = new()
+    {
+        ["relative-overlay"] = "Icon.Gauge",
+        ["fuel-calculator"] = "Icon.Fuel",
+        ["inputs"] = "Icon.Gamepad",
+        ["input-trace"] = "Icon.Waveform",
+        ["standings"] = "Icon.Podium",
+        ["lap-timer"] = "Icon.Stopwatch",
+        ["track-map"] = "Icon.MapPin",
+        ["weather"] = "Icon.Cloud"
+    };
 
     [ObservableProperty]
-    private WidgetMetadata? selectedWidget;
+    private ObservableCollection<WidgetLibraryItem> widgetLibraryItems = new();
 
     [ObservableProperty]
-    private ObservableCollection<WidgetMetadata> availableWidgets = new();
+    private ObservableCollection<ActiveWidgetCard> activeWidgetCards = new();
 
     [ObservableProperty]
-    private bool isWidgetSelected;
+    private ActiveWidgetCard? selectedActiveCard;
 
     [ObservableProperty]
-    private string selectedWidgetId = "";
+    private bool isActiveWidgetSelected;
+
+    [ObservableProperty]
+    private string selectedConfigWidgetId = "";
+
+    [ObservableProperty]
+    private bool isSetupMode;
+
+    [ObservableProperty]
+    private string overlayPositionText = "Not set";
 
     // Column visibility toggles (Relative Overlay)
     [ObservableProperty]
@@ -54,9 +74,6 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     private bool showGap = true;
-
-    [ObservableProperty]
-    private string overlayPositionText = "Not set";
 
     // Data settings (Relative Overlay)
     [ObservableProperty]
@@ -177,200 +194,145 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private int inputTraceHistorySeconds = 10;
 
-    /// <summary>
-    /// Initializes a new instance of the MainWindowViewModel.
-    /// </summary>
+    public string SetupModeButtonText => IsSetupMode ? "Exit Setup Mode (Ctrl+F1)" : "Enter Setup Mode (Ctrl+F1)";
+
     public MainWindowViewModel(IWidgetRegistry widgetRegistry, IServiceProvider serviceProvider)
     {
         _widgetRegistry = widgetRegistry ?? throw new ArgumentNullException(nameof(widgetRegistry));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
 
-        // Load available widgets from the registry
-        LoadAvailableWidgets();
+        LoadWidgetLibrary();
     }
 
-    /// <summary>
-    /// Called when selected widget changes to load its configuration.
-    /// </summary>
-    partial void OnSelectedWidgetChanged(WidgetMetadata? value)
+    partial void OnIsSetupModeChanged(bool value)
     {
-        if (value == null)
+        OnPropertyChanged(nameof(SetupModeButtonText));
+    }
+
+    partial void OnSelectedActiveCardChanged(ActiveWidgetCard? oldValue, ActiveWidgetCard? newValue)
+    {
+        if (oldValue != null)
+            oldValue.IsSelected = false;
+
+        if (newValue == null)
         {
-            IsWidgetSelected = false;
-            SelectedWidgetId = "";
+            IsActiveWidgetSelected = false;
+            SelectedConfigWidgetId = "";
             return;
         }
 
-        IsWidgetSelected = true;
-        SelectedWidgetId = value.WidgetId;
+        newValue.IsSelected = true;
+        IsActiveWidgetSelected = true;
+        SelectedConfigWidgetId = newValue.WidgetId;
 
-        if (value.WidgetId == "fuel-calculator")
+        LoadConfigForWidget(newValue.WidgetId);
+    }
+
+    private void LoadConfigForWidget(string widgetId)
+    {
+        if (widgetId == "fuel-calculator")
         {
-            if (_savedConfigs.TryGetValue(value.WidgetId, out var saved) && saved is IFuelCalculatorConfig fuelConfig)
-            {
+            if (_savedConfigs.TryGetValue(widgetId, out var saved) && saved is IFuelCalculatorConfig fuelConfig)
                 LoadConfigFromFuelWidget(fuelConfig);
-            }
             else
             {
-                var activeInstance = _activeWidgets.Values
-                    .FirstOrDefault(w => w.WidgetId == value.WidgetId);
-
-                if (activeInstance?.Configuration is IFuelCalculatorConfig config)
-                {
+                var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
+                if (instance?.Configuration is IFuelCalculatorConfig config)
                     LoadConfigFromFuelWidget(config);
-                }
                 else
-                {
                     LoadConfigFromFuelWidget(new FuelCalculatorConfig());
-                }
             }
         }
-        else if (value.WidgetId == "inputs")
+        else if (widgetId == "inputs")
         {
-            if (_savedConfigs.TryGetValue(value.WidgetId, out var saved) && saved is IInputsConfig inputsConfig)
-            {
+            if (_savedConfigs.TryGetValue(widgetId, out var saved) && saved is IInputsConfig inputsConfig)
                 LoadConfigFromInputsWidget(inputsConfig);
-            }
             else
             {
-                var activeInstance = _activeWidgets.Values
-                    .FirstOrDefault(w => w.WidgetId == value.WidgetId);
-
-                if (activeInstance?.Configuration is IInputsConfig config)
-                {
+                var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
+                if (instance?.Configuration is IInputsConfig config)
                     LoadConfigFromInputsWidget(config);
-                }
                 else
-                {
                     LoadConfigFromInputsWidget(new InputsConfig());
-                }
             }
         }
-        else if (value.WidgetId == "input-trace")
+        else if (widgetId == "input-trace")
         {
-            if (_savedConfigs.TryGetValue(value.WidgetId, out var saved) && saved is IInputTraceConfig inputTraceConfig)
-            {
+            if (_savedConfigs.TryGetValue(widgetId, out var saved) && saved is IInputTraceConfig inputTraceConfig)
                 LoadConfigFromInputTraceWidget(inputTraceConfig);
-            }
             else
             {
-                var activeInstance = _activeWidgets.Values
-                    .FirstOrDefault(w => w.WidgetId == value.WidgetId);
-
-                if (activeInstance?.Configuration is IInputTraceConfig config)
-                {
+                var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
+                if (instance?.Configuration is IInputTraceConfig config)
                     LoadConfigFromInputTraceWidget(config);
-                }
                 else
-                {
                     LoadConfigFromInputTraceWidget(new InputTraceConfig());
-                }
             }
         }
-        else if (value.WidgetId == "standings")
+        else if (widgetId == "standings")
         {
-            if (_savedConfigs.TryGetValue(value.WidgetId, out var saved) && saved is IStandingsConfig standingsConfig)
-            {
+            if (_savedConfigs.TryGetValue(widgetId, out var saved) && saved is IStandingsConfig standingsConfig)
                 LoadConfigFromStandingsWidget(standingsConfig);
-            }
             else
             {
-                var activeInstance = _activeWidgets.Values
-                    .FirstOrDefault(w => w.WidgetId == value.WidgetId);
-
-                if (activeInstance?.Configuration is IStandingsConfig config)
-                {
+                var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
+                if (instance?.Configuration is IStandingsConfig config)
                     LoadConfigFromStandingsWidget(config);
-                }
                 else
-                {
                     LoadConfigFromStandingsWidget(new StandingsConfig());
-                }
             }
         }
-        else if (value.WidgetId == "lap-timer")
+        else if (widgetId == "lap-timer")
         {
-            if (_savedConfigs.TryGetValue(value.WidgetId, out var saved) && saved is ILapTimerConfig lapTimerConfig)
-            {
+            if (_savedConfigs.TryGetValue(widgetId, out var saved) && saved is ILapTimerConfig lapTimerConfig)
                 LoadConfigFromLapTimerWidget(lapTimerConfig);
-            }
             else
             {
-                var activeInstance = _activeWidgets.Values
-                    .FirstOrDefault(w => w.WidgetId == value.WidgetId);
-
-                if (activeInstance?.Configuration is ILapTimerConfig config)
-                {
+                var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
+                if (instance?.Configuration is ILapTimerConfig config)
                     LoadConfigFromLapTimerWidget(config);
-                }
                 else
-                {
                     LoadConfigFromLapTimerWidget(new LapTimerConfig());
-                }
             }
         }
-        else if (value.WidgetId == "track-map")
+        else if (widgetId == "track-map")
         {
-            if (_savedConfigs.TryGetValue(value.WidgetId, out var saved) && saved is ITrackMapConfig trackMapConfig)
-            {
+            if (_savedConfigs.TryGetValue(widgetId, out var saved) && saved is ITrackMapConfig trackMapConfig)
                 LoadConfigFromTrackMapWidget(trackMapConfig);
-            }
             else
             {
-                var activeInstance = _activeWidgets.Values
-                    .FirstOrDefault(w => w.WidgetId == value.WidgetId);
-
-                if (activeInstance?.Configuration is ITrackMapConfig config)
-                {
+                var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
+                if (instance?.Configuration is ITrackMapConfig config)
                     LoadConfigFromTrackMapWidget(config);
-                }
                 else
-                {
                     LoadConfigFromTrackMapWidget(new TrackMapConfig());
-                }
             }
         }
-        else if (value.WidgetId == "weather")
+        else if (widgetId == "weather")
         {
-            if (_savedConfigs.TryGetValue(value.WidgetId, out var saved) && saved is IWeatherConfig weatherConfig)
-            {
+            if (_savedConfigs.TryGetValue(widgetId, out var saved) && saved is IWeatherConfig weatherConfig)
                 LoadConfigFromWeatherWidget(weatherConfig);
-            }
             else
             {
-                var activeInstance = _activeWidgets.Values
-                    .FirstOrDefault(w => w.WidgetId == value.WidgetId);
-
-                if (activeInstance?.Configuration is IWeatherConfig config)
-                {
+                var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
+                if (instance?.Configuration is IWeatherConfig config)
                     LoadConfigFromWeatherWidget(config);
-                }
                 else
-                {
                     LoadConfigFromWeatherWidget(new WeatherConfig());
-                }
             }
         }
         else
         {
-            // Relative Overlay or other widgets
-            if (_savedConfigs.TryGetValue(value.WidgetId, out var saved) && saved is IRelativeOverlayConfig relConfig)
-            {
+            // Relative Overlay
+            if (_savedConfigs.TryGetValue(widgetId, out var saved) && saved is IRelativeOverlayConfig relConfig)
                 LoadConfigFromRelativeWidget(relConfig);
-            }
             else
             {
-                var activeInstance = _activeWidgets.Values
-                    .FirstOrDefault(w => w.WidgetId == value.WidgetId);
-
-                if (activeInstance?.Configuration is IRelativeOverlayConfig config)
-                {
+                var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
+                if (instance?.Configuration is IRelativeOverlayConfig config)
                     LoadConfigFromRelativeWidget(config);
-                }
                 else
-                {
                     LoadConfigFromRelativeWidget(new RelativeOverlayConfig());
-                }
             }
         }
     }
@@ -514,11 +476,10 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void PushRelativeConfigToActiveWidgets()
     {
-        if (SelectedWidget == null || SelectedWidgetId != "relative-overlay") return;
+        if (SelectedConfigWidgetId != "relative-overlay") return;
 
-        // Preserve saved position if it exists
         double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing) && existing is RelativeOverlayConfig existingRel)
+        if (_savedConfigs.TryGetValue(SelectedConfigWidgetId, out var existing) && existing is RelativeOverlayConfig existingRel)
         {
             left = existingRel.OverlayLeft;
             top = existingRel.OverlayTop;
@@ -540,11 +501,11 @@ public partial class MainWindowViewModel : ObservableObject
             OverlayTop = top
         };
 
-        _savedConfigs[SelectedWidget.WidgetId] = config;
+        _savedConfigs[SelectedConfigWidgetId] = config;
 
         foreach (var kv in _activeWidgets)
         {
-            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            if (kv.Key.StartsWith(SelectedConfigWidgetId))
             {
                 kv.Value.UpdateConfiguration(config);
             }
@@ -552,7 +513,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         foreach (var kv in _activeWindows)
         {
-            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            if (kv.Key.StartsWith(SelectedConfigWidgetId))
             {
                 kv.Value.ApplyColumnVisibility(config);
             }
@@ -561,10 +522,10 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void PushInputsConfigToActiveWidgets()
     {
-        if (SelectedWidget == null || SelectedWidgetId != "inputs") return;
+        if (SelectedConfigWidgetId != "inputs") return;
 
         double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing) && existing is InputsConfig existingInputs)
+        if (_savedConfigs.TryGetValue(SelectedConfigWidgetId, out var existing) && existing is InputsConfig existingInputs)
         {
             left = existingInputs.OverlayLeft;
             top = existingInputs.OverlayTop;
@@ -581,11 +542,11 @@ public partial class MainWindowViewModel : ObservableObject
             OverlayTop = top
         };
 
-        _savedConfigs[SelectedWidget.WidgetId] = config;
+        _savedConfigs[SelectedConfigWidgetId] = config;
 
         foreach (var kv in _activeWidgets)
         {
-            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            if (kv.Key.StartsWith(SelectedConfigWidgetId))
             {
                 kv.Value.UpdateConfiguration(config);
             }
@@ -593,7 +554,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         foreach (var kv in _activeWindows)
         {
-            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            if (kv.Key.StartsWith(SelectedConfigWidgetId))
             {
                 kv.Value.ApplyInputsConfig(config);
             }
@@ -602,10 +563,10 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void PushInputTraceConfigToActiveWidgets()
     {
-        if (SelectedWidget == null || SelectedWidgetId != "input-trace") return;
+        if (SelectedConfigWidgetId != "input-trace") return;
 
         double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing) && existing is InputTraceConfig existingTrace)
+        if (_savedConfigs.TryGetValue(SelectedConfigWidgetId, out var existing) && existing is InputTraceConfig existingTrace)
         {
             left = existingTrace.OverlayLeft;
             top = existingTrace.OverlayTop;
@@ -621,11 +582,11 @@ public partial class MainWindowViewModel : ObservableObject
             OverlayTop = top
         };
 
-        _savedConfigs[SelectedWidget.WidgetId] = config;
+        _savedConfigs[SelectedConfigWidgetId] = config;
 
         foreach (var kv in _activeWidgets)
         {
-            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            if (kv.Key.StartsWith(SelectedConfigWidgetId))
             {
                 kv.Value.UpdateConfiguration(config);
             }
@@ -633,7 +594,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         foreach (var kv in _activeWindows)
         {
-            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            if (kv.Key.StartsWith(SelectedConfigWidgetId))
             {
                 kv.Value.ApplyInputTraceConfig(config);
             }
@@ -642,10 +603,10 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void PushStandingsConfigToActiveWidgets()
     {
-        if (SelectedWidget == null || SelectedWidgetId != "standings") return;
+        if (SelectedConfigWidgetId != "standings") return;
 
         double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing) && existing is StandingsConfig existingStandings)
+        if (_savedConfigs.TryGetValue(SelectedConfigWidgetId, out var existing) && existing is StandingsConfig existingStandings)
         {
             left = existingStandings.OverlayLeft;
             top = existingStandings.OverlayTop;
@@ -670,11 +631,11 @@ public partial class MainWindowViewModel : ObservableObject
             OverlayTop = top
         };
 
-        _savedConfigs[SelectedWidget.WidgetId] = config;
+        _savedConfigs[SelectedConfigWidgetId] = config;
 
         foreach (var kv in _activeWidgets)
         {
-            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            if (kv.Key.StartsWith(SelectedConfigWidgetId))
             {
                 kv.Value.UpdateConfiguration(config);
             }
@@ -682,7 +643,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         foreach (var kv in _activeWindows)
         {
-            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            if (kv.Key.StartsWith(SelectedConfigWidgetId))
             {
                 kv.Value.ApplyStandingsConfig(config);
             }
@@ -691,10 +652,10 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void PushLapTimerConfigToActiveWidgets()
     {
-        if (SelectedWidget == null || SelectedWidgetId != "lap-timer") return;
+        if (SelectedConfigWidgetId != "lap-timer") return;
 
         double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing) && existing is LapTimerConfig existingLapTimer)
+        if (_savedConfigs.TryGetValue(SelectedConfigWidgetId, out var existing) && existing is LapTimerConfig existingLapTimer)
         {
             left = existingLapTimer.OverlayLeft;
             top = existingLapTimer.OverlayTop;
@@ -711,11 +672,11 @@ public partial class MainWindowViewModel : ObservableObject
             OverlayTop = top
         };
 
-        _savedConfigs[SelectedWidget.WidgetId] = config;
+        _savedConfigs[SelectedConfigWidgetId] = config;
 
         foreach (var kv in _activeWidgets)
         {
-            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            if (kv.Key.StartsWith(SelectedConfigWidgetId))
             {
                 kv.Value.UpdateConfiguration(config);
             }
@@ -723,7 +684,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         foreach (var kv in _activeWindows)
         {
-            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            if (kv.Key.StartsWith(SelectedConfigWidgetId))
             {
                 kv.Value.ApplyLapTimerConfig(config);
             }
@@ -732,10 +693,10 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void PushTrackMapConfigToActiveWidgets()
     {
-        if (SelectedWidget == null || SelectedWidgetId != "track-map") return;
+        if (SelectedConfigWidgetId != "track-map") return;
 
         double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing) && existing is TrackMapConfig existingTrackMap)
+        if (_savedConfigs.TryGetValue(SelectedConfigWidgetId, out var existing) && existing is TrackMapConfig existingTrackMap)
         {
             left = existingTrackMap.OverlayLeft;
             top = existingTrackMap.OverlayTop;
@@ -750,11 +711,11 @@ public partial class MainWindowViewModel : ObservableObject
             OverlayTop = top
         };
 
-        _savedConfigs[SelectedWidget.WidgetId] = config;
+        _savedConfigs[SelectedConfigWidgetId] = config;
 
         foreach (var kv in _activeWidgets)
         {
-            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            if (kv.Key.StartsWith(SelectedConfigWidgetId))
             {
                 kv.Value.UpdateConfiguration(config);
             }
@@ -762,7 +723,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         foreach (var kv in _activeWindows)
         {
-            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            if (kv.Key.StartsWith(SelectedConfigWidgetId))
             {
                 kv.Value.ApplyTrackMapConfig(config);
             }
@@ -771,10 +732,10 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void PushWeatherConfigToActiveWidgets()
     {
-        if (SelectedWidget == null || SelectedWidgetId != "weather") return;
+        if (SelectedConfigWidgetId != "weather") return;
 
         double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing) && existing is WeatherConfig existingWeather)
+        if (_savedConfigs.TryGetValue(SelectedConfigWidgetId, out var existing) && existing is WeatherConfig existingWeather)
         {
             left = existingWeather.OverlayLeft;
             top = existingWeather.OverlayTop;
@@ -789,11 +750,11 @@ public partial class MainWindowViewModel : ObservableObject
             OverlayTop = top
         };
 
-        _savedConfigs[SelectedWidget.WidgetId] = config;
+        _savedConfigs[SelectedConfigWidgetId] = config;
 
         foreach (var kv in _activeWidgets)
         {
-            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            if (kv.Key.StartsWith(SelectedConfigWidgetId))
             {
                 kv.Value.UpdateConfiguration(config);
             }
@@ -801,7 +762,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         foreach (var kv in _activeWindows)
         {
-            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            if (kv.Key.StartsWith(SelectedConfigWidgetId))
             {
                 kv.Value.ApplyWeatherConfig(config);
             }
@@ -810,10 +771,10 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void PushFuelConfigToActiveWidgets()
     {
-        if (SelectedWidget == null || SelectedWidgetId != "fuel-calculator") return;
+        if (SelectedConfigWidgetId != "fuel-calculator") return;
 
         double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedWidget.WidgetId, out var existing) && existing is FuelCalculatorConfig existingFuel)
+        if (_savedConfigs.TryGetValue(SelectedConfigWidgetId, out var existing) && existing is FuelCalculatorConfig existingFuel)
         {
             left = existingFuel.OverlayLeft;
             top = existingFuel.OverlayTop;
@@ -826,11 +787,11 @@ public partial class MainWindowViewModel : ObservableObject
             OverlayTop = top
         };
 
-        _savedConfigs[SelectedWidget.WidgetId] = config;
+        _savedConfigs[SelectedConfigWidgetId] = config;
 
         foreach (var kv in _activeWidgets)
         {
-            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            if (kv.Key.StartsWith(SelectedConfigWidgetId))
             {
                 kv.Value.UpdateConfiguration(config);
             }
@@ -838,17 +799,13 @@ public partial class MainWindowViewModel : ObservableObject
 
         foreach (var kv in _activeWindows)
         {
-            if (kv.Key.StartsWith(SelectedWidget.WidgetId))
+            if (kv.Key.StartsWith(SelectedConfigWidgetId))
             {
                 kv.Value.ApplyFuelConfig(config);
             }
         }
     }
 
-    /// <summary>
-    /// Saves the overlay window position for the given widget type.
-    /// Called by WidgetOverlayWindow on LocationChanged.
-    /// </summary>
     public void SaveWidgetPosition(string? widgetId, double left, double top)
     {
         if (widgetId == null) return;
@@ -899,40 +856,24 @@ public partial class MainWindowViewModel : ObservableObject
         else
         {
             if (widgetId == "fuel-calculator")
-            {
                 _savedConfigs[widgetId] = new FuelCalculatorConfig { OverlayLeft = left, OverlayTop = top };
-            }
             else if (widgetId == "inputs")
-            {
                 _savedConfigs[widgetId] = new InputsConfig { OverlayLeft = left, OverlayTop = top };
-            }
             else if (widgetId == "input-trace")
-            {
                 _savedConfigs[widgetId] = new InputTraceConfig { OverlayLeft = left, OverlayTop = top };
-            }
             else if (widgetId == "standings")
-            {
                 _savedConfigs[widgetId] = new StandingsConfig { OverlayLeft = left, OverlayTop = top };
-            }
             else if (widgetId == "lap-timer")
-            {
                 _savedConfigs[widgetId] = new LapTimerConfig { OverlayLeft = left, OverlayTop = top };
-            }
             else if (widgetId == "track-map")
-            {
                 _savedConfigs[widgetId] = new TrackMapConfig { OverlayLeft = left, OverlayTop = top };
-            }
             else if (widgetId == "weather")
-            {
                 _savedConfigs[widgetId] = new WeatherConfig { OverlayLeft = left, OverlayTop = top };
-            }
             else
-            {
                 _savedConfigs[widgetId] = new RelativeOverlayConfig { OverlayLeft = left, OverlayTop = top };
-            }
         }
 
-        if (SelectedWidget?.WidgetId == widgetId)
+        if (SelectedActiveCard?.WidgetId == widgetId)
         {
             UpdatePositionText(left, top);
         }
@@ -946,51 +887,44 @@ public partial class MainWindowViewModel : ObservableObject
             OverlayPositionText = $"{(int)left}, {(int)top}";
     }
 
-    /// <summary>
-    /// Loads all available widgets from the registry into the view.
-    /// </summary>
-    private void LoadAvailableWidgets()
+    private void LoadWidgetLibrary()
     {
-        AvailableWidgets.Clear();
+        WidgetLibraryItems.Clear();
 
         var registeredWidgets = _widgetRegistry.GetRegisteredWidgets();
         foreach (var widget in registeredWidgets)
         {
-            AvailableWidgets.Add(widget);
+            WidgetLibraryItems.Add(new WidgetLibraryItem(widget, OnWidgetToggled));
         }
     }
 
-    /// <summary>
-    /// Command to add the selected widget to the application.
-    /// </summary>
-    [RelayCommand]
-    private async Task AddWidget()
+    private async void OnWidgetToggled(WidgetLibraryItem item, bool isEnabled)
     {
-        if (SelectedWidget == null)
-        {
-            return;
-        }
+        if (_isRestoring) return;
 
+        if (isEnabled)
+            await ActivateWidget(item.Metadata);
+        else
+            await DeactivateWidget(item.Metadata.WidgetId);
+    }
+
+    private async Task ActivateWidget(WidgetMetadata metadata)
+    {
         try
         {
-            // Create widget instance
-            var widgetInstance = _serviceProvider.GetService(SelectedWidget.WidgetType) as IWidget;
-            if (widgetInstance == null)
-            {
-                return;
-            }
+            var widgetInstance = _serviceProvider.GetService(metadata.WidgetType) as IWidget;
+            if (widgetInstance == null) return;
 
-            // Generate unique ID for this instance
-            string instanceId = $"{SelectedWidget.WidgetId}-{Guid.NewGuid():N}";
-
-            // Store in active widgets
+            string instanceId = $"{metadata.WidgetId}-{Guid.NewGuid():N}";
             _activeWidgets[instanceId] = widgetInstance;
 
-            // Start the widget
             await widgetInstance.StartAsync();
+            ShowWidgetOverlay(widgetInstance, metadata.DisplayName, instanceId);
 
-            // Show the overlay window
-            ShowWidgetOverlay(widgetInstance, SelectedWidget.DisplayName, instanceId);
+            // Create active widget card
+            var iconKey = WidgetIconKeys.GetValueOrDefault(metadata.WidgetId, "Icon.Gauge");
+            var card = new ActiveWidgetCard(metadata.WidgetId, metadata.DisplayName, iconKey);
+            ActiveWidgetCards.Add(card);
 
             SaveConfiguration();
         }
@@ -1000,12 +934,58 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Shows the widget in an overlay window on top of other applications.
-    /// </summary>
+    private async Task DeactivateWidget(string widgetId)
+    {
+        var instancesToRemove = _activeWidgets
+            .Where(kv => kv.Key.StartsWith(widgetId))
+            .Select(kv => kv.Key)
+            .ToList();
+
+        foreach (var instanceId in instancesToRemove)
+        {
+            await RemoveWidgetInstance(instanceId);
+        }
+
+        // Remove the card
+        var card = ActiveWidgetCards.FirstOrDefault(c => c.WidgetId == widgetId);
+        if (card != null)
+        {
+            if (SelectedActiveCard == card)
+                SelectedActiveCard = null;
+            ActiveWidgetCards.Remove(card);
+        }
+
+        SaveConfiguration();
+    }
+
+    [RelayCommand]
+    private void SelectActiveCard(ActiveWidgetCard? card)
+    {
+        SelectedActiveCard = card;
+    }
+
+    [RelayCommand]
+    private void ToggleSetupMode()
+    {
+        WidgetDragService.Instance.ToggleDragging();
+        IsSetupMode = WidgetDragService.Instance.IsDraggingEnabled;
+
+        if (!IsSetupMode)
+        {
+            SaveConfiguration();
+        }
+    }
+
+    [RelayCommand]
+    private void StartLayout()
+    {
+        SaveConfiguration();
+        if (Application.Current.MainWindow != null)
+            Application.Current.MainWindow.WindowState = WindowState.Minimized;
+    }
+
     private void ShowWidgetOverlay(IWidget widget, string displayName, string instanceId)
     {
-        // Create the overlay window
         var overlayWindow = new WidgetOverlayWindow
         {
             Title = displayName,
@@ -1014,7 +994,6 @@ public partial class MainWindowViewModel : ObservableObject
             ViewModel = this
         };
 
-        // Restore saved position if available
         if (_savedConfigs.TryGetValue(widget.WidgetId, out var savedConfig))
         {
             widget.UpdateConfiguration(savedConfig);
@@ -1069,32 +1048,24 @@ public partial class MainWindowViewModel : ObservableObject
             }
         }
 
-        // Track the window
         _activeWindows[instanceId] = overlayWindow;
 
-        // Handle window closing to clean up tracking
         overlayWindow.Closed += (s, e) =>
         {
             _activeWindows.Remove(instanceId);
         };
 
-        // Show the window on top
         overlayWindow.Show();
     }
 
-    /// <summary>
-    /// Removes an active widget instance and closes its window.
-    /// </summary>
     public async Task RemoveWidgetInstance(string instanceId)
     {
-        // Close the overlay window if it exists
         if (_activeWindows.TryGetValue(instanceId, out var window))
         {
             window.Close();
             _activeWindows.Remove(instanceId);
         }
 
-        // Stop and remove the widget
         if (_activeWidgets.TryGetValue(instanceId, out var widget))
         {
             await widget.StopAsync();
@@ -1102,57 +1073,23 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Command to remove the selected widget from the application.
-    /// </summary>
-    [RelayCommand]
-    private async Task RemoveWidget()
-    {
-        if (SelectedWidget == null)
-        {
-            return;
-        }
-
-        // Remove all instances of this widget type
-        var instancesToRemove = _activeWidgets
-            .Where(kv => kv.Key.StartsWith(SelectedWidget.WidgetId))
-            .Select(kv => kv.Key)
-            .ToList();
-
-        foreach (var instanceId in instancesToRemove)
-        {
-            await RemoveWidgetInstance(instanceId);
-        }
-
-        SaveConfiguration();
-    }
-
-    /// <summary>
-    /// Registers a new widget type with the registry.
-    /// </summary>
     public void RegisterWidget(WidgetMetadata metadata)
     {
         _widgetRegistry.RegisterWidget(metadata);
-        LoadAvailableWidgets();
+        LoadWidgetLibrary();
     }
 
-    /// <summary>
-    /// Unregisters a widget type from the registry.
-    /// </summary>
     public bool UnregisterWidget(string widgetId)
     {
         var result = _widgetRegistry.UnregisterWidget(widgetId);
         if (result)
         {
-            LoadAvailableWidgets();
+            LoadWidgetLibrary();
         }
 
         return result;
     }
 
-    /// <summary>
-    /// Saves the current widget configuration and active widgets to disk.
-    /// </summary>
     public void SaveConfiguration()
     {
         var activeWidgetIds = _activeWidgets.Values
@@ -1163,9 +1100,6 @@ public partial class MainWindowViewModel : ObservableObject
         _persistenceService.Save(_savedConfigs, activeWidgetIds);
     }
 
-    /// <summary>
-    /// Loads saved configuration from disk and restores previously active widgets.
-    /// </summary>
     public async Task LoadAndRestoreConfiguration()
     {
         var state = _persistenceService.Load();
@@ -1183,6 +1117,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
 
         // Restore active widgets
+        _isRestoring = true;
         var registeredWidgets = _widgetRegistry.GetRegisteredWidgets().ToList();
         foreach (var widgetId in state.ActiveWidgets)
         {
@@ -1201,11 +1136,22 @@ public partial class MainWindowViewModel : ObservableObject
 
                 await widgetInstance.StartAsync();
                 ShowWidgetOverlay(widgetInstance, metadata.DisplayName, instanceId);
+
+                // Set toggle on in library
+                var libraryItem = WidgetLibraryItems.FirstOrDefault(i => i.WidgetId == widgetId);
+                if (libraryItem != null)
+                    libraryItem.IsEnabled = true;
+
+                // Create card
+                var iconKey = WidgetIconKeys.GetValueOrDefault(widgetId, "Icon.Gauge");
+                var card = new ActiveWidgetCard(widgetId, metadata.DisplayName, iconKey);
+                ActiveWidgetCards.Add(card);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error restoring widget {widgetId}: {ex.Message}");
             }
         }
+        _isRestoring = false;
     }
 }

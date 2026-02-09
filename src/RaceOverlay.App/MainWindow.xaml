@@ -1,14 +1,13 @@
-﻿<Window x:Class="RaceOverlay.App.MainWindow"
+<Window x:Class="RaceOverlay.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RaceOverlay.App"
-        xmlns:views="clr-namespace:RaceOverlay.Engine.Views;assembly=RaceOverlay.Engine"
         mc:Ignorable="d"
         Title="RaceOverlay - Widget Manager"
-        Height="600"
-        Width="1000"
+        Height="650"
+        Width="1100"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource RO.BackgroundBrush}">
     <Window.Resources>
@@ -37,351 +36,423 @@
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="250"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
 
-        <!-- Status Bar -->
-        <Border Grid.Row="0" Grid.ColumnSpan="3" Background="{StaticResource RO.SurfaceBrush}" BorderBrush="{StaticResource RO.BorderBrush}" BorderThickness="0,0,0,1" Padding="12,8">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="Drag Mode: " Foreground="{StaticResource RO.MutedBrush}" FontSize="11"/>
-                <Ellipse Width="8" Height="8" Fill="{StaticResource RO.GreenBrush}" Margin="4,0,0,0" VerticalAlignment="Center" Name="DragModeIndicator"/>
-                <TextBlock Text="OFF" Foreground="{StaticResource RO.MutedBrush}" FontSize="11" Margin="4,0,0,0" Name="DragModeText"/>
-                <Separator Width="1" Background="{StaticResource RO.BorderBrush}" Margin="12,0"/>
-                <TextBlock Text="Press CTRL+F12 to toggle drag mode" Foreground="{StaticResource RO.MutedBrush}" FontSize="10" FontStyle="Italic"/>
-            </StackPanel>
-        </Border>
+        <!-- Main Content: 3 Columns -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="250"/>
+            </Grid.ColumnDefinitions>
 
-        <!-- Left Panel -->
-        <Border Grid.Row="1" Grid.Column="0" Background="{StaticResource RO.SurfaceBrush}" BorderBrush="{StaticResource RO.BorderBrush}" BorderThickness="0,0,1,0">
-            <DockPanel LastChildFill="True">
-                <Border DockPanel.Dock="Top" Background="{StaticResource RO.BackgroundBrush}">
-                    <TextBlock Text="Available Widgets" FontSize="14" FontWeight="Bold" Foreground="{StaticResource RO.ForegroundBrush}" Margin="12"/>
-                </Border>
-                <ListBox Name="WidgetListBox" ItemsSource="{Binding AvailableWidgets}" SelectedItem="{Binding SelectedWidget}" Background="Transparent" BorderThickness="0"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                    <ListBox.ItemContainerStyle>
-                        <Style TargetType="ListBoxItem">
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                        </Style>
-                    </ListBox.ItemContainerStyle>
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Margin="10">
-                                <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" Foreground="{StaticResource RO.ForegroundBrush}"/>
-                                <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{StaticResource RO.MutedBrush}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="30" Margin="0,4,0,0"/>
+            <!-- Left Panel: Widget Library -->
+            <Border Grid.Column="0" Background="{StaticResource RO.SurfaceBrush}"
+                    BorderBrush="{StaticResource RO.BorderBrush}" BorderThickness="0,0,1,0">
+                <DockPanel LastChildFill="True">
+                    <TextBlock DockPanel.Dock="Top" Text="Widget Library"
+                               FontSize="13" FontWeight="Bold"
+                               Foreground="{StaticResource RO.ForegroundBrush}"
+                               Margin="12,12,12,8"/>
+                    <ItemsControl ItemsSource="{Binding WidgetLibraryItems}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="12,6" Background="Transparent">
+                                    <DockPanel>
+                                        <ToggleButton DockPanel.Dock="Right"
+                                                      IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                                      Style="{StaticResource ToggleSwitchStyle}"
+                                                      VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding DisplayName}"
+                                                   Foreground="{StaticResource RO.ForegroundBrush}"
+                                                   FontSize="12"
+                                                   VerticalAlignment="Center"/>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+
+            <!-- Center Panel: Active Widgets -->
+            <DockPanel Grid.Column="1" LastChildFill="True" Margin="16,12">
+                <TextBlock DockPanel.Dock="Top" Text="Active Widgets"
+                           FontSize="13" FontWeight="Bold"
+                           Foreground="{StaticResource RO.ForegroundBrush}"
+                           Margin="0,0,0,12"/>
+
+                <!-- Empty state -->
+                <TextBlock DockPanel.Dock="Top"
+                           Text="Toggle widgets on from the library to activate them"
+                           Foreground="{StaticResource RO.MutedBrush}"
+                           FontSize="12" FontStyle="Italic" Margin="0,8,0,0"
+                           Visibility="{Binding ActiveWidgetCards.Count, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
+
+                <!-- Card grid -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding ActiveWidgetCards}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource WidgetCardStyle}"
+                                        Content="{Binding DisplayName}"
+                                        Command="{Binding DataContext.SelectActiveCardCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="CardBorder" CornerRadius="8"
+                                                    Background="{StaticResource RO.SurfaceBrush}"
+                                                    BorderBrush="{StaticResource RO.BorderBrush}"
+                                                    BorderThickness="1" Padding="8"
+                                                    Width="110" Height="100">
+                                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                    <Path Fill="{StaticResource RO.MutedBrush}"
+                                                          Stretch="Uniform" Width="28" Height="28"
+                                                          HorizontalAlignment="Center" Margin="0,0,0,8"
+                                                          Data="{Binding IconKey, Converter={x:Null}}"/>
+                                                    <TextBlock Text="{Binding DisplayName}"
+                                                               Foreground="{StaticResource RO.ForegroundBrush}"
+                                                               FontSize="11" TextAlignment="Center"
+                                                               HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="CardBorder" Property="BorderBrush" Value="{StaticResource RO.PurpleBrush}"/>
+                                                    <Setter TargetName="CardBorder" Property="Background" Value="{StaticResource RO.SurfaceLightBrush}"/>
+                                                </Trigger>
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter TargetName="CardBorder" Property="BorderBrush" Value="{StaticResource RO.PurpleBrush}"/>
+                                                    <Setter TargetName="CardBorder" Property="BorderThickness" Value="2"/>
+                                                </DataTrigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+
+            <!-- Right Panel: Configuration -->
+            <Border Grid.Column="2" Background="{StaticResource RO.SurfaceBrush}"
+                    BorderBrush="{StaticResource RO.BorderBrush}" BorderThickness="1,0,0,0">
+                <DockPanel LastChildFill="True">
+                    <TextBlock DockPanel.Dock="Top" Text="Configuration"
+                               FontSize="13" FontWeight="Bold"
+                               Foreground="{StaticResource RO.ForegroundBrush}"
+                               Margin="12,12,12,8"/>
+
+                    <!-- No widget selected message -->
+                    <TextBlock DockPanel.Dock="Top"
+                               Text="Select an active widget to configure"
+                               Foreground="{StaticResource RO.MutedBrush}"
+                               FontSize="12" FontStyle="Italic" Margin="12,8,12,0"
+                               Visibility="{Binding IsActiveWidgetSelected, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
+
+                    <!-- Settings panel (visible when widget selected) -->
+                    <Border Background="Transparent" Margin="12,4"
+                            Visibility="{Binding IsActiveWidgetSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <!-- Relative Overlay Settings -->
+                                <StackPanel>
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedConfigWidgetId}" Value="relative-overlay">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+
+                                    <TextBlock Text="COLUMNS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
+                                    <CheckBox Content="Position" IsChecked="{Binding ShowPosition}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Class Color" IsChecked="{Binding ShowClassColor}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Driver Name" IsChecked="{Binding ShowDriverName}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Rating" IsChecked="{Binding ShowRating}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Stint" IsChecked="{Binding ShowStint}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Lap Time" IsChecked="{Binding ShowLapTime}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Gap" IsChecked="{Binding ShowGap}" Style="{StaticResource SettingsCheckBox}"/>
+
+                                    <TextBlock Text="DATA" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Drivers Ahead" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding DriversAhead, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Drivers Behind" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding DriversBehind, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding UpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Fuel Calculator Settings -->
+                                <StackPanel>
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedConfigWidgetId}" Value="fuel-calculator">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+
+                                    <TextBlock Text="FUEL SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Tank Capacity (L)" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding FuelTankCapacity, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Inputs Settings -->
+                                <StackPanel>
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedConfigWidgetId}" Value="inputs">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+
+                                    <TextBlock Text="INPUTS SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding InputsUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="COLORS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Throttle" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding InputsThrottleColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Brake" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding InputsBrakeColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Clutch" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding InputsClutchColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="VISIBILITY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+
+                                    <CheckBox Content="Show Clutch" IsChecked="{Binding InputsShowClutch}" Style="{StaticResource SettingsCheckBox}"/>
+                                </StackPanel>
+
+                                <!-- Standings Settings -->
+                                <StackPanel>
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedConfigWidgetId}" Value="standings">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+
+                                    <TextBlock Text="STANDINGS SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding StandingsUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Max Drivers" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding StandingsMaxDrivers, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="COLUMNS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+
+                                    <CheckBox Content="Class Color" IsChecked="{Binding StandingsShowClassColor}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Car Number" IsChecked="{Binding StandingsShowCarNumber}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Positions Gained" IsChecked="{Binding StandingsShowPositionsGained}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="License" IsChecked="{Binding StandingsShowLicense}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="iRating" IsChecked="{Binding StandingsShowIRating}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Car Brand" IsChecked="{Binding StandingsShowCarBrand}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Interval" IsChecked="{Binding StandingsShowInterval}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Gap" IsChecked="{Binding StandingsShowGap}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Last Lap Time" IsChecked="{Binding StandingsShowLastLapTime}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Delta" IsChecked="{Binding StandingsShowDelta}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Pit Status" IsChecked="{Binding StandingsShowPitStatus}" Style="{StaticResource SettingsCheckBox}"/>
+                                </StackPanel>
+
+                                <!-- Lap Timer Settings -->
+                                <StackPanel>
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedConfigWidgetId}" Value="lap-timer">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+
+                                    <TextBlock Text="LAP TIMER SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding LapTimerUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="VISIBILITY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+
+                                    <CheckBox Content="Show Delta to Best" IsChecked="{Binding LapTimerShowDeltaToBest}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Show Last Lap" IsChecked="{Binding LapTimerShowLastLap}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Show Best Lap" IsChecked="{Binding LapTimerShowBestLap}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Show Delta Last vs Best" IsChecked="{Binding LapTimerShowDeltaLastBest}" Style="{StaticResource SettingsCheckBox}"/>
+                                </StackPanel>
+
+                                <!-- Track Map Settings -->
+                                <StackPanel>
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedConfigWidgetId}" Value="track-map">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+
+                                    <TextBlock Text="TRACK MAP SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding TrackMapUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="VISIBILITY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+
+                                    <CheckBox Content="Show Driver Names" IsChecked="{Binding TrackMapShowDriverNames}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Show Pit Status" IsChecked="{Binding TrackMapShowPitStatus}" Style="{StaticResource SettingsCheckBox}"/>
+                                </StackPanel>
+
+                                <!-- Weather Settings -->
+                                <StackPanel>
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedConfigWidgetId}" Value="weather">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+
+                                    <TextBlock Text="WEATHER SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding WeatherUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="VISIBILITY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+
+                                    <CheckBox Content="Show Wind" IsChecked="{Binding WeatherShowWind}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Show Forecast" IsChecked="{Binding WeatherShowForecast}" Style="{StaticResource SettingsCheckBox}"/>
+                                </StackPanel>
+
+                                <!-- Input Trace Settings -->
+                                <StackPanel>
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedConfigWidgetId}" Value="input-trace">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+
+                                    <TextBlock Text="INPUT TRACE SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding InputTraceUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="History (seconds)" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding InputTraceHistorySeconds, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="COLORS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Throttle" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding InputTraceThrottleColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Brake" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Text="{Binding InputTraceBrakeColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Position Section (shared) -->
+                                <TextBlock Text="POSITION" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Overlay Position" Style="{StaticResource SettingsLabel}"/>
+                                    <TextBlock Text="{Binding OverlayPositionText}" Foreground="{StaticResource RO.ForegroundBrush}" FontSize="12" VerticalAlignment="Center"/>
+                                </StackPanel>
                             </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
+                        </ScrollViewer>
+                    </Border>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <!-- Bottom Action Bar -->
+        <Border Grid.Row="1" Background="{StaticResource RO.SurfaceBrush}"
+                BorderBrush="{StaticResource RO.BorderBrush}" BorderThickness="0,1,0,0"
+                Padding="16,10">
+            <DockPanel>
+                <Button DockPanel.Dock="Right"
+                        Content="Start Layout"
+                        Command="{Binding StartLayoutCommand}"
+                        Style="{StaticResource PurpleRoundedButtonStyle}"
+                        Margin="8,0,0,0"/>
+                <Button DockPanel.Dock="Left"
+                        Content="{Binding SetupModeButtonText}"
+                        Command="{Binding ToggleSetupModeCommand}"
+                        Style="{StaticResource PurpleRoundedButtonStyle}"/>
+                <Border/>
             </DockPanel>
         </Border>
-
-        <!-- Splitter -->
-        <GridSplitter Grid.Row="1" Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="{StaticResource RO.BorderBrush}" ShowsPreview="True"/>
-
-        <!-- Right Panel -->
-        <DockPanel Grid.Row="1" Grid.Column="2" LastChildFill="True">
-            <Border DockPanel.Dock="Top" Background="{StaticResource RO.BackgroundBrush}">
-                <TextBlock Text="Configuration" FontSize="14" FontWeight="Bold" Foreground="{StaticResource RO.ForegroundBrush}" Margin="12"/>
-            </Border>
-
-            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="12" Height="40">
-                <Button Command="{Binding AddWidgetCommand}" Content="Add Widget" Margin="4" Background="{StaticResource RO.PurpleBrush}" Foreground="White" FontSize="12" Cursor="Hand" Padding="12,8"/>
-                <Button Command="{Binding RemoveWidgetCommand}" Content="Remove Widget" Margin="4" Background="{StaticResource RO.MagentaBrush}" Foreground="White" FontSize="12" Cursor="Hand" Padding="12,8"/>
-            </StackPanel>
-
-            <!-- No widget selected message -->
-            <Border DockPanel.Dock="Top" Background="Transparent" Margin="16" Visibility="{Binding IsWidgetSelected, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
-                <TextBlock Text="No widget selected" Foreground="{StaticResource RO.MutedBrush}" FontStyle="Italic"/>
-            </Border>
-
-            <!-- Settings panel (visible when widget selected) -->
-            <Border Background="Transparent" Margin="16"
-                    Visibility="{Binding IsWidgetSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
-                        <!-- Widget Description -->
-                        <TextBlock Text="{Binding SelectedWidget.Description}" FontSize="12" Foreground="{StaticResource RO.MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,16"/>
-
-                        <!-- Relative Overlay Settings -->
-                        <StackPanel>
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedWidgetId}" Value="relative-overlay">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
-
-                            <!-- Columns Section -->
-                            <TextBlock Text="COLUMNS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
-                            <CheckBox Content="Position" IsChecked="{Binding ShowPosition}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Class Color" IsChecked="{Binding ShowClassColor}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Driver Name" IsChecked="{Binding ShowDriverName}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Rating" IsChecked="{Binding ShowRating}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Stint" IsChecked="{Binding ShowStint}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Lap Time" IsChecked="{Binding ShowLapTime}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Gap" IsChecked="{Binding ShowGap}" Style="{StaticResource SettingsCheckBox}"/>
-
-                            <!-- Data Section -->
-                            <TextBlock Text="DATA" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Drivers Ahead" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding DriversAhead, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
-                            </StackPanel>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Drivers Behind" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding DriversBehind, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
-                            </StackPanel>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding UpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <!-- Fuel Calculator Settings -->
-                        <StackPanel>
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedWidgetId}" Value="fuel-calculator">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
-
-                            <TextBlock Text="FUEL SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Tank Capacity (L)" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding FuelTankCapacity, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <!-- Inputs Settings -->
-                        <StackPanel>
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedWidgetId}" Value="inputs">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
-
-                            <TextBlock Text="INPUTS SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding InputsUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
-                            </StackPanel>
-
-                            <TextBlock Text="COLORS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Throttle" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding InputsThrottleColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
-                            </StackPanel>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Brake" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding InputsBrakeColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
-                            </StackPanel>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Clutch" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding InputsClutchColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
-                            </StackPanel>
-
-                            <TextBlock Text="VISIBILITY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
-
-                            <CheckBox Content="Show Clutch" IsChecked="{Binding InputsShowClutch}" Style="{StaticResource SettingsCheckBox}"/>
-                        </StackPanel>
-
-                        <!-- Standings Settings -->
-                        <StackPanel>
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedWidgetId}" Value="standings">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
-
-                            <TextBlock Text="STANDINGS SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding StandingsUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
-                            </StackPanel>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Max Drivers" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding StandingsMaxDrivers, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
-                            </StackPanel>
-
-                            <TextBlock Text="COLUMNS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
-
-                            <CheckBox Content="Class Color" IsChecked="{Binding StandingsShowClassColor}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Car Number" IsChecked="{Binding StandingsShowCarNumber}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Positions Gained" IsChecked="{Binding StandingsShowPositionsGained}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="License" IsChecked="{Binding StandingsShowLicense}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="iRating" IsChecked="{Binding StandingsShowIRating}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Car Brand" IsChecked="{Binding StandingsShowCarBrand}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Interval" IsChecked="{Binding StandingsShowInterval}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Gap" IsChecked="{Binding StandingsShowGap}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Last Lap Time" IsChecked="{Binding StandingsShowLastLapTime}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Delta" IsChecked="{Binding StandingsShowDelta}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Pit Status" IsChecked="{Binding StandingsShowPitStatus}" Style="{StaticResource SettingsCheckBox}"/>
-                        </StackPanel>
-
-                        <!-- Lap Timer Settings -->
-                        <StackPanel>
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedWidgetId}" Value="lap-timer">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
-
-                            <TextBlock Text="LAP TIMER SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding LapTimerUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
-                            </StackPanel>
-
-                            <TextBlock Text="VISIBILITY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
-
-                            <CheckBox Content="Show Delta to Best" IsChecked="{Binding LapTimerShowDeltaToBest}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Show Last Lap" IsChecked="{Binding LapTimerShowLastLap}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Show Best Lap" IsChecked="{Binding LapTimerShowBestLap}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Show Delta Last vs Best" IsChecked="{Binding LapTimerShowDeltaLastBest}" Style="{StaticResource SettingsCheckBox}"/>
-                        </StackPanel>
-
-                        <!-- Track Map Settings -->
-                        <StackPanel>
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedWidgetId}" Value="track-map">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
-
-                            <TextBlock Text="TRACK MAP SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding TrackMapUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
-                            </StackPanel>
-
-                            <TextBlock Text="VISIBILITY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
-
-                            <CheckBox Content="Show Driver Names" IsChecked="{Binding TrackMapShowDriverNames}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Show Pit Status" IsChecked="{Binding TrackMapShowPitStatus}" Style="{StaticResource SettingsCheckBox}"/>
-                        </StackPanel>
-
-                        <!-- Weather Settings -->
-                        <StackPanel>
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedWidgetId}" Value="weather">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
-
-                            <TextBlock Text="WEATHER SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding WeatherUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
-                            </StackPanel>
-
-                            <TextBlock Text="VISIBILITY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
-
-                            <CheckBox Content="Show Wind" IsChecked="{Binding WeatherShowWind}" Style="{StaticResource SettingsCheckBox}"/>
-                            <CheckBox Content="Show Forecast" IsChecked="{Binding WeatherShowForecast}" Style="{StaticResource SettingsCheckBox}"/>
-                        </StackPanel>
-
-                        <!-- Input Trace Settings -->
-                        <StackPanel>
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedWidgetId}" Value="input-trace">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
-
-                            <TextBlock Text="INPUT TRACE SETTINGS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding InputTraceUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
-                            </StackPanel>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="History (seconds)" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding InputTraceHistorySeconds, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
-                            </StackPanel>
-
-                            <TextBlock Text="COLORS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Throttle" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding InputTraceThrottleColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
-                            </StackPanel>
-
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Brake" Style="{StaticResource SettingsLabel}"/>
-                                <TextBox Text="{Binding InputTraceBrakeColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <!-- Position Section (shared) -->
-                        <TextBlock Text="POSITION" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Overlay Position" Style="{StaticResource SettingsLabel}"/>
-                            <TextBlock Text="{Binding OverlayPositionText}" Foreground="{StaticResource RO.ForegroundBrush}" FontSize="12" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </StackPanel>
-                </ScrollViewer>
-            </Border>
-
-        </DockPanel>
     </Grid>
 </Window>
