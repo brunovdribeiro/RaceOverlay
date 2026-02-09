@@ -6,6 +6,7 @@
         xmlns:views="clr-namespace:RaceOverlay.Engine.Views;assembly=RaceOverlay.Engine"
         mc:Ignorable="d"
         Title="Widget Overlay"
+        AutomationProperties.AutomationId="WidgetOverlayWindow"
         SizeToContent="WidthAndHeight"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource RO.BackgroundBrush}"
