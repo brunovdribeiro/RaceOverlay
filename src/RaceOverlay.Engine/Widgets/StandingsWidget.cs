@@ -99,18 +99,18 @@ public class StandingsWidget : IWidget
         var driverData = new (string name, string cls, string clsColor, string carNum, int startPos,
             string license, string licColor, int iRating, string carBrand)[]
         {
-            ("M. Verstappen", "GTE", "#3B82F6", "1",   3, "A 4.99", "#0153DB", 5200, "Porsche 911 GT3 R"),
-            ("L. Hamilton",   "GTE", "#22C55E", "44",  1, "A 4.65", "#0153DB", 4800, "Mercedes AMG GT3"),
-            ("C. Leclerc",    "GTE", "#EF4444", "16",  5, "A 3.99", "#0153DB", 4600, "Ferrari 296 GT3"),
+            ("A. Rivera",     "GTE", "#3B82F6", "1",   3, "A 4.99", "#0153DB", 5200, "Porsche 911 GT3 R"),
+            ("J. Lindqvist",  "GTE", "#22C55E", "44",  1, "A 4.65", "#0153DB", 4800, "Mercedes AMG GT3"),
+            ("T. Nakamura",   "GTE", "#EF4444", "16",  5, "A 3.99", "#0153DB", 4600, "Ferrari 296 GT3"),
             ("You",           "GT3", "#F97316", "88",  6, "B 3.21", "#00C12B", 3200, "McLaren 720S GT3"),
-            ("L. Norris",     "GT3", "#F97316", "4",   2, "B 2.85", "#00C12B", 2900, "McLaren 720S GT3"),
-            ("C. Sainz",      "GTE", "#EF4444", "55",  7, "A 4.12", "#0153DB", 4400, "Ferrari 296 GT3"),
-            ("O. Piastri",    "GT3", "#F97316", "81",  9, "B 3.50", "#00C12B", 3100, "McLaren 720S GT3"),
-            ("G. Russell",    "GTE", "#22C55E", "63",  4, "A 4.30", "#0153DB", 4500, "Mercedes AMG GT3"),
-            ("F. Alonso",     "GT3", "#14B8A6", "14",  8, "C 3.75", "#FEEC04", 2200, "Aston Martin GT3"),
-            ("P. Gasly",      "GT3", "#EC4899", "10", 12, "C 2.99", "#FEEC04", 2000, "Alpine A110 GT4"),
-            ("Y. Tsunoda",    "GT3", "#3B82F6", "22", 10, "D 2.50", "#FC8A27", 1800, "Red Bull GT3"),
-            ("A. Albon",      "GT3", "#6366F1", "23", 11, "D 1.75", "#FC8A27", 1500, "Williams GT3"),
+            ("E. Bergmann",   "GT3", "#F97316", "4",   2, "B 2.85", "#00C12B", 2900, "McLaren 720S GT3"),
+            ("D. Okafor",     "GTE", "#EF4444", "55",  7, "A 4.12", "#0153DB", 4400, "Ferrari 296 GT3"),
+            ("M. Janssen",    "GT3", "#F97316", "81",  9, "B 3.50", "#00C12B", 3100, "McLaren 720S GT3"),
+            ("R. Petrov",     "GTE", "#22C55E", "63",  4, "A 4.30", "#0153DB", 4500, "Mercedes AMG GT3"),
+            ("K. Tanaka",     "GT3", "#14B8A6", "14",  8, "C 3.75", "#FEEC04", 2200, "Aston Martin GT3"),
+            ("S. Fischer",    "GT3", "#EC4899", "10", 12, "C 2.99", "#FEEC04", 2000, "Alpine A110 GT4"),
+            ("L. Moreno",     "GT3", "#3B82F6", "22", 10, "D 2.50", "#FC8A27", 1800, "Red Bull GT3"),
+            ("H. Kowalski",   "GT3", "#6366F1", "23", 11, "D 1.75", "#FC8A27", 1500, "Williams GT3"),
         };
 
         double baseLapTime = 92.456;

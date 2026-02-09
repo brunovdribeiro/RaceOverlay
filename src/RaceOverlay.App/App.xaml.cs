@@ -1,4 +1,8 @@
-﻿using System.Windows;
+﻿using System;
+using System.IO;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -10,6 +14,7 @@ using RaceOverlay.Engine.Views;
 using RaceOverlay.Engine.ViewModels;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Providers.iRacing;
+using Serilog;
 
 namespace RaceOverlay.App;
 
@@ -28,32 +33,86 @@ public partial class App : Application
     /// </summary>
     protected override void OnStartup(StartupEventArgs e)
     {
-        // Build the host with DI configuration
-        _host = Host.CreateDefaultBuilder()
-            .ConfigureLogging(logging =>
-            {
-                logging.ClearProviders();
-                logging.AddConsole();
-                logging.AddDebug();
-            })
-            .ConfigureServices((context, services) =>
-            {
-                ConfigureServices(services);
-            })
-            .Build();
+        SetupExceptionHandling();
 
-        // Start the iRacing data service
-        _dataService = _host.Services.GetRequiredService<IRacingDataService>();
-        _dataService.Start();
+        var logPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "RaceOverlay", "logs", "raceoverlay-.log");
 
-        // Get the main window from DI and show it
-        var mainWindow = _host.Services.GetRequiredService<MainWindow>();
-        mainWindow.Show();
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Information()
+            .WriteTo.Console()
+            .WriteTo.File(logPath,
+                rollingInterval: RollingInterval.Day,
+                retainedFileCountLimit: 7,
+                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+            .CreateLogger();
 
-        // Restore previously saved widget configuration
-        _ = mainWindow.GetViewModel().LoadAndRestoreConfiguration();
+        Log.Information("RaceOverlay starting up");
+
+        try
+        {
+            // Build the host with DI configuration
+            _host = Host.CreateDefaultBuilder()
+                .UseSerilog()
+                .ConfigureServices((context, services) =>
+                {
+                    ConfigureServices(services);
+                })
+                .Build();
+
+            // Start the iRacing data service
+            _dataService = _host.Services.GetRequiredService<IRacingDataService>();
+            _dataService.Start();
+
+            // Get the main window from DI and show it
+            var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+            mainWindow.Show();
+
+            // Restore previously saved widget configuration
+            _ = mainWindow.GetViewModel().LoadAndRestoreConfiguration();
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Failed to start application");
+            ShowErrorDialog("Startup Error", ex);
+            Shutdown(1);
+        }
 
         base.OnStartup(e);
+    }
+
+    private void SetupExceptionHandling()
+    {
+        DispatcherUnhandledException += (s, e) =>
+        {
+            Log.Error(e.Exception, "Unhandled UI exception");
+            ShowErrorDialog("Unexpected Error", e.Exception);
+            e.Handled = true;
+        };
+
+        TaskScheduler.UnobservedTaskException += (s, e) =>
+        {
+            Log.Error(e.Exception, "Unobserved task exception");
+            Dispatcher.Invoke(() => ShowErrorDialog("Background Task Error", e.Exception));
+            e.SetObserved();
+        };
+
+        AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+        {
+            if (e.ExceptionObject is Exception ex)
+            {
+                Log.Fatal(ex, "Fatal unhandled exception");
+                Dispatcher.Invoke(() => ShowErrorDialog("Fatal Error", ex));
+            }
+        };
+    }
+
+    private static void ShowErrorDialog(string title, Exception ex)
+    {
+        var details = $"{ex.Message}\n\n{ex}";
+        var dialog = new ErrorDialog(title, details);
+        dialog.ShowDialog();
     }
 
     /// <summary>
@@ -62,8 +121,10 @@ public partial class App : Application
     /// </summary>
     protected override void OnExit(ExitEventArgs e)
     {
+        Log.Information("RaceOverlay shutting down");
         _dataService?.Stop();
         _host?.Dispose();
+        Log.CloseAndFlush();
         base.OnExit(e);
     }
 

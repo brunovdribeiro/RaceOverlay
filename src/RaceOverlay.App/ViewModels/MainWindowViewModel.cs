@@ -7,6 +7,7 @@ using RaceOverlay.App.Services;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Engine.Widgets;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace RaceOverlay.App.ViewModels;
 
@@ -14,6 +15,7 @@ public partial class MainWindowViewModel : ObservableObject
 {
     private readonly IWidgetRegistry _widgetRegistry;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<MainWindowViewModel> _logger;
     private readonly ConfigurationPersistenceService _persistenceService = new();
     private readonly Dictionary<string, IWidget> _activeWidgets = new();
     private readonly Dictionary<string, WidgetOverlayWindow> _activeWindows = new();
@@ -196,10 +198,11 @@ public partial class MainWindowViewModel : ObservableObject
 
     public string SetupModeButtonText => IsSetupMode ? "Exit Setup Mode (Ctrl+F1)" : "Enter Setup Mode (Ctrl+F1)";
 
-    public MainWindowViewModel(IWidgetRegistry widgetRegistry, IServiceProvider serviceProvider)
+    public MainWindowViewModel(IWidgetRegistry widgetRegistry, IServiceProvider serviceProvider, ILogger<MainWindowViewModel> logger)
     {
         _widgetRegistry = widgetRegistry ?? throw new ArgumentNullException(nameof(widgetRegistry));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         LoadWidgetLibrary();
     }
@@ -930,7 +933,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error adding widget: {ex.Message}");
+            _logger.LogError(ex, "Error adding widget");
         }
     }
 
@@ -1149,7 +1152,7 @@ public partial class MainWindowViewModel : ObservableObject
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error restoring widget {widgetId}: {ex.Message}");
+                _logger.LogError(ex, "Error restoring widget {WidgetId}", widgetId);
             }
         }
         _isRestoring = false;

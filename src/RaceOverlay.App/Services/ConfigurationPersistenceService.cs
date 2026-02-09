@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Engine.Widgets;
+using Serilog;
 
 namespace RaceOverlay.App.Services;
 
@@ -49,7 +50,7 @@ public class ConfigurationPersistenceService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Failed to save configuration: {ex.Message}");
+            Log.Error(ex, "Failed to save configuration");
         }
     }
 
@@ -65,7 +66,7 @@ public class ConfigurationPersistenceService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Failed to load configuration: {ex.Message}");
+            Log.Error(ex, "Failed to load configuration");
             return null;
         }
     }
@@ -90,7 +91,7 @@ public class ConfigurationPersistenceService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Failed to deserialize config for {widgetId}: {ex.Message}");
+            Log.Error(ex, "Failed to deserialize config for {WidgetId}", widgetId);
             return null;
         }
     }

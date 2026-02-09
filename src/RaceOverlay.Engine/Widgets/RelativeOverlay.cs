@@ -90,7 +90,7 @@ public class RelativeOverlay : IWidget
     {
         _relativeDrivers.Clear();
 
-        var driverNames = new[] { "Rogerio Silva", "Matthew Naylor", "Rick Zwieten", "Istvan Fodor", "Sindre Setsaas", "Alexandr Fescov", "Marius Rieck", "John Smith", "Lucas Costa", "Max Verstappen" };
+        var driverNames = new[] { "A. Rivera", "J. Lindqvist", "T. Nakamura", "E. Bergmann", "D. Okafor", "M. Janssen", "R. Petrov", "K. Tanaka", "S. Fischer", "L. Moreno" };
 
         double playerTrackDistance = 5000;
 
