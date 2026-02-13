@@ -32,3 +32,6 @@ bld/
 
 # JetBrains Rider
 *.sln.iml
+
+# Signing certificates
+*.pfx

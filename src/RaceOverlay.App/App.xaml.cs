@@ -15,6 +15,7 @@ using RaceOverlay.Engine.ViewModels;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Providers.iRacing;
 using Serilog;
+using Velopack;
 
 namespace RaceOverlay.App;
 
@@ -24,6 +25,16 @@ namespace RaceOverlay.App;
 /// </summary>
 public partial class App : Application
 {
+    [STAThread]
+    public static void Main(string[] args)
+    {
+        VelopackApp.Build().Run();
+
+        var app = new App();
+        app.InitializeComponent();
+        app.Run();
+    }
+
     private IHost? _host;
     private IRacingDataService? _dataService;
 
@@ -71,6 +82,9 @@ public partial class App : Application
 
             // Restore previously saved widget configuration
             _ = mainWindow.GetViewModel().LoadAndRestoreConfiguration();
+
+            // Check for updates in background (non-blocking)
+            _ = CheckForUpdatesAsync();
         }
         catch (Exception ex)
         {
@@ -106,6 +120,40 @@ public partial class App : Application
                 Dispatcher.Invoke(() => ShowErrorDialog("Fatal Error", ex));
             }
         };
+    }
+
+    private async Task CheckForUpdatesAsync()
+    {
+        try
+        {
+            var mgr = new UpdateManager("https://github.com/Race-Overlay/RaceOverlay/releases");
+            if (!mgr.IsInstalled)
+            {
+                Log.Information("App is not installed via Velopack, skipping update check");
+                return;
+            }
+
+            var updateInfo = await mgr.CheckForUpdatesAsync();
+            if (updateInfo != null)
+            {
+                Log.Information("Update available: {Version}", updateInfo.TargetFullRelease.Version);
+                await mgr.DownloadUpdatesAsync(updateInfo);
+                var result = System.Windows.MessageBox.Show(
+                    $"Version {updateInfo.TargetFullRelease.Version} is available. Restart to update?",
+                    "Update Available",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Information);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    mgr.ApplyUpdatesAndRestart(updateInfo);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Update check failed");
+        }
     }
 
     private static void ShowErrorDialog(string title, Exception ex)
