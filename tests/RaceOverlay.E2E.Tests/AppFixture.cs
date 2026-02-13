@@ -1,4 +1,5 @@
 using System.IO;
+using System.Runtime.InteropServices;
 using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Definitions;
@@ -14,6 +15,15 @@ namespace RaceOverlay.E2E.Tests;
 public class AppFixture : IDisposable
 {
     private const int OffscreenThresholdPx = 5000;
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(IntPtr hWnd);
+    private const int SW_SHOW = 5;
+    private const int SW_RESTORE = 9;
 
     public static readonly string ConfigDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -46,6 +56,21 @@ public class AppFixture : IDisposable
             ?? throw new InvalidOperationException("Main window not found.");
     }
 
+    public Window GetMainWindowIncludingHidden()
+    {
+        // Show the window using Win32 API if it's hidden
+        var mainWindowHandle = App.MainWindowHandle;
+        if (mainWindowHandle != IntPtr.Zero && !IsWindowVisible(mainWindowHandle))
+        {
+            ShowWindow(mainWindowHandle, SW_RESTORE);
+            SetForegroundWindow(mainWindowHandle);
+            Thread.Sleep(500);
+        }
+
+        // Now get the window using FlaUI
+        return GetMainWindow();
+    }
+
     public Window? FindOverlayWindow(string title)
     {
         var allWindows = App.GetAllTopLevelWindows(Automation);
@@ -54,6 +79,12 @@ public class AppFixture : IDisposable
 
     public bool IsWindowMinimized(Window window)
     {
+        if (window.Patterns.Window.IsSupported)
+        {
+            var state = window.Patterns.Window.Pattern.WindowVisualState;
+            return state == WindowVisualState.Minimized;
+        }
+        // Fallback to bounds check if WindowPattern is not supported
         var bounds = window.BoundingRectangle;
         return bounds.Width == 0 || bounds.Height == 0 || bounds.Top > OffscreenThresholdPx;
     }

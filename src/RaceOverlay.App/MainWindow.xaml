@@ -9,6 +9,7 @@
         AutomationProperties.AutomationId="MainWindow"
         Height="650"
         Width="1100"
+        WindowState="Maximized"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource RO.BackgroundBrush}">
     <Window.Resources>

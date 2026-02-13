@@ -1,24 +1,20 @@
 namespace RaceOverlay.E2E.Tests;
 
 [Collection("App")]
-public class SystemTrayTests
+public class SystemTrayTests(AppFixture fixture)
 {
-    private readonly AppFixture _fixture;
-
-    public SystemTrayTests(AppFixture fixture) => _fixture = fixture;
-
     [Fact]
     public void CloseMainWindow_ShouldMinimizeToTray()
     {
-        var mainWindow = _fixture.GetMainWindow();
+        var mainWindow = fixture.GetMainWindow();
 
         mainWindow.Close();
         Thread.Sleep(Waits.AppLifecycleMs);
 
-        Assert.False(_fixture.App.HasExited, "App should not exit when closing main window");
+        Assert.False(fixture.App.HasExited, "App should not exit when closing main window");
 
-        // Restore window for other tests
-        mainWindow = _fixture.GetMainWindow();
+        // Restore window for other tests (get hidden window and show it)
+        mainWindow = fixture.GetMainWindowIncludingHidden();
         mainWindow.Patterns.Window.Pattern.SetWindowVisualState(
             FlaUI.Core.Definitions.WindowVisualState.Normal);
         Thread.Sleep(Waits.UISettleMs);
