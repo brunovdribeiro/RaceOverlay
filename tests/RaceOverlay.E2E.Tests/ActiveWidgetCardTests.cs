@@ -1,3 +1,5 @@
+using FlaUI.Core.Tools;
+
 namespace RaceOverlay.E2E.Tests;
 
 [Collection("App")]
@@ -34,8 +36,10 @@ public class ActiveWidgetCardTests
     {
         using var _ = _fixture.ActivateAndSelect(WidgetNames.FuelCalculator);
 
-        Assert.NotNull(_fixture.GetMainWindow()
-            .FindFirstDescendant(cf => cf.ByText("FUEL SETTINGS")));
+        var mainWindows = _fixture.GetMainWindow();
+        
+        
+        Assert.NotNull(mainWindows.FindFirstDescendant(cf => cf.ByText("FUEL SETTINGS")));
     }
 
     [Fact]
@@ -58,8 +62,18 @@ public class ActiveWidgetCardTests
             WidgetNames.RelativeOverlay, WidgetNames.Standings, WidgetNames.LapTimer);
         var mainWindow = _fixture.GetMainWindow();
 
-        Assert.NotNull(_fixture.FindCardInCenterPanel(mainWindow, WidgetNames.RelativeOverlay));
-        Assert.NotNull(_fixture.FindCardInCenterPanel(mainWindow, WidgetNames.Standings));
-        Assert.NotNull(_fixture.FindCardInCenterPanel(mainWindow, WidgetNames.LapTimer));
+        var relCard = Retry.WhileNull(
+            () => _fixture.FindCardInCenterPanel(mainWindow, WidgetNames.RelativeOverlay),
+            timeout: Waits.OverlayTimeout, interval: Waits.RetryInterval);
+        var standingsCard = Retry.WhileNull(
+            () => _fixture.FindCardInCenterPanel(mainWindow, WidgetNames.Standings),
+            timeout: Waits.OverlayTimeout, interval: Waits.RetryInterval);
+        var lapTimerCard = Retry.WhileNull(
+            () => _fixture.FindCardInCenterPanel(mainWindow, WidgetNames.LapTimer),
+            timeout: Waits.OverlayTimeout, interval: Waits.RetryInterval);
+
+        Assert.NotNull(relCard.Result);
+        Assert.NotNull(standingsCard.Result);
+        Assert.NotNull(lapTimerCard.Result);
     }
 }

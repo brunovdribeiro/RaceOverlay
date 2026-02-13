@@ -15,7 +15,8 @@
       "Bash(dotnet restore:*)",
       "Bash(ls \"C:\\\\Sources\\\\RaceOverlay\\\\src\\\\RaceOverlay.App\\\\Models\"\" 2>nul || echo \"Directory does not exist \")",
       "Bash(dotnet msbuild:*)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(taskkill:*)"
     ]
   }
 }

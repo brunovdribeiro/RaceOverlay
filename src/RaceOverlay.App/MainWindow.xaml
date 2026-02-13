@@ -95,7 +95,8 @@
 
                 <!-- Card grid -->
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <ItemsControl ItemsSource="{Binding ActiveWidgetCards}">
+                    <ItemsControl ItemsSource="{Binding ActiveWidgetCards}"
+                                  AutomationProperties.AutomationId="ActiveWidgetCards">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel/>
@@ -105,6 +106,7 @@
                             <DataTemplate>
                                 <Button Style="{StaticResource WidgetCardStyle}"
                                         Content="{Binding DisplayName}"
+                                        AutomationProperties.AutomationId="{Binding WidgetId}"
                                         Command="{Binding DataContext.SelectActiveCardCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                         CommandParameter="{Binding}">
                                     <Button.Template>

@@ -13,7 +13,6 @@ namespace RaceOverlay.E2E.Tests;
 /// </summary>
 public class AppFixture : IDisposable
 {
-    private const int CenterPanelOffsetPx = 200;
     private const int OffscreenThresholdPx = 5000;
 
     public static readonly string ConfigDir = Path.Combine(
@@ -72,7 +71,7 @@ public class AppFixture : IDisposable
     {
         var toggle = FindWidgetToggle(mainWindow, widgetName)
             ?? throw new InvalidOperationException($"Toggle not found for '{widgetName}'");
-        toggle.Click();
+        InvokeToggle(toggle);
         Retry.WhileFalse(
             () => FindOverlayWindow(widgetName) != null,
             timeout: Waits.OverlayTimeout,
@@ -83,11 +82,25 @@ public class AppFixture : IDisposable
     {
         var toggle = FindWidgetToggle(mainWindow, widgetName)
             ?? throw new InvalidOperationException($"Toggle not found for '{widgetName}'");
-        toggle.Click();
+        InvokeToggle(toggle);
         Retry.WhileTrue(
             () => FindOverlayWindow(widgetName) != null,
             timeout: Waits.OverlayTimeout,
             interval: Waits.RetryInterval);
+    }
+
+    /// <summary>
+    /// Invokes a toggle via UIA patterns instead of mouse click,
+    /// so Topmost overlay windows don't intercept the interaction.
+    /// </summary>
+    private static void InvokeToggle(AutomationElement toggle)
+    {
+        if (toggle.Patterns.Toggle.IsSupported)
+            toggle.Patterns.Toggle.Pattern.Toggle();
+        else if (toggle.Patterns.Invoke.IsSupported)
+            toggle.Patterns.Invoke.Pattern.Invoke();
+        else
+            toggle.Click();
     }
 
     /// <summary>
@@ -103,10 +116,8 @@ public class AppFixture : IDisposable
 
     public AutomationElement? FindCardInCenterPanel(Window mainWindow, string widgetName)
     {
-        var centerStartX = mainWindow.BoundingRectangle.Left + CenterPanelOffsetPx;
-        var textElements = mainWindow.FindAllDescendants(cf => cf.ByText(widgetName));
-        return textElements.FirstOrDefault(t =>
-            t.BoundingRectangle.Left >= centerStartX && !t.IsOffscreen);
+        var widgetId = widgetName.ToLower().Replace(" ", "-");
+        return mainWindow.FindFirstDescendant(cf => cf.ByAutomationId(widgetId));
     }
 
     public void ClickActiveWidgetCard(Window mainWindow, string widgetName)
