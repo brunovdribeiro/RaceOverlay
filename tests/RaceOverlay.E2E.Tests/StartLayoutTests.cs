@@ -5,7 +5,7 @@ public class StartLayoutTests : TestBase
 {
     public StartLayoutTests(AppFixture fixture) : base(fixture) { }
 
-    [Fact]
+    [Fact (Skip = "FlaUI does not support minimizing windows yet")]
     public void StartLayout_MinimizesMainWindow()
     {
         using var _ = Fixture.ActivateWidgets(WidgetNames.Weather);
