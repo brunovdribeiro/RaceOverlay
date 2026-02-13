@@ -3,16 +3,14 @@ using FlaUI.Core.Definitions;
 namespace RaceOverlay.E2E.Tests;
 
 [Collection("App")]
-public class SetupModeTests
+public class SetupModeTests : TestBase
 {
-    private readonly AppFixture _fixture;
-
-    public SetupModeTests(AppFixture fixture) => _fixture = fixture;
+    public SetupModeTests(AppFixture fixture) : base(fixture) { }
 
     [Fact]
     public void ToggleSetupMode_ButtonTextChanges()
     {
-        var mainWindow = _fixture.GetMainWindow();
+        var mainWindow = Fixture.GetMainWindow();
         var button = mainWindow.FindFirstDescendant(cf => cf.ByAutomationId("ToggleSetupModeButton"));
         Assert.NotNull(button);
 
@@ -33,8 +31,8 @@ public class SetupModeTests
     [Fact]
     public void SetupMode_OverlayWindowShowsDragIndicator()
     {
-        using var _ = _fixture.ActivateWidgets(WidgetNames.FuelCalculator);
-        var mainWindow = _fixture.GetMainWindow();
+        using var _ = Fixture.ActivateWidgets(WidgetNames.FuelCalculator);
+        var mainWindow = Fixture.GetMainWindow();
 
         var setupButton = mainWindow.FindFirstDescendant(cf => cf.ByAutomationId("ToggleSetupModeButton"));
         Assert.NotNull(setupButton);
@@ -43,7 +41,7 @@ public class SetupModeTests
         setupButton.Click();
         Thread.Sleep(Waits.UISettleMs);
 
-        var overlay = _fixture.FindOverlayWindow(WidgetNames.FuelCalculator);
+        var overlay = Fixture.FindOverlayWindow(WidgetNames.FuelCalculator);
         Assert.NotNull(overlay);
         Assert.NotNull(overlay.FindFirstDescendant(cf => cf.ByText("Drag Mode")));
 
@@ -55,20 +53,20 @@ public class SetupModeTests
     [Fact]
     public void DragMode_CanMoveOverlayWindow()
     {
-        using var _ = _fixture.ActivateWidgets(WidgetNames.Inputs);
+        using var _ = Fixture.ActivateWidgets(WidgetNames.Inputs);
 
-        var overlay = _fixture.FindOverlayWindow(WidgetNames.Inputs);
+        var overlay = Fixture.FindOverlayWindow(WidgetNames.Inputs);
         Assert.NotNull(overlay);
         var initialBounds = overlay.BoundingRectangle;
 
         // Enter setup mode
-        var mainWindow = _fixture.GetMainWindow();
+        var mainWindow = Fixture.GetMainWindow();
         var setupButton = mainWindow.FindFirstDescendant(cf => cf.ByAutomationId("ToggleSetupModeButton"));
         setupButton!.Click();
         Thread.Sleep(Waits.UISettleMs);
 
         // Refresh overlay reference
-        overlay = _fixture.FindOverlayWindow(WidgetNames.Inputs);
+        overlay = Fixture.FindOverlayWindow(WidgetNames.Inputs);
         Assert.NotNull(overlay);
 
         // Simulate drag
@@ -84,7 +82,7 @@ public class SetupModeTests
         FlaUI.Core.Input.Mouse.Up(FlaUI.Core.Input.MouseButton.Left);
         Thread.Sleep(Waits.UISettleMs);
 
-        overlay = _fixture.FindOverlayWindow(WidgetNames.Inputs);
+        overlay = Fixture.FindOverlayWindow(WidgetNames.Inputs);
         Assert.NotNull(overlay);
         var movedBounds = overlay.BoundingRectangle;
 

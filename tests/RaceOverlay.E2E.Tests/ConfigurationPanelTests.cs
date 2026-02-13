@@ -1,20 +1,18 @@
 namespace RaceOverlay.E2E.Tests;
 
 [Collection("App")]
-public class ConfigurationPanelTests
+public class ConfigurationPanelTests : TestBase
 {
-    private readonly AppFixture _fixture;
-
-    public ConfigurationPanelTests(AppFixture fixture) => _fixture = fixture;
+    public ConfigurationPanelTests(AppFixture fixture) : base(fixture) { }
 
     // --- Shared assertion helpers ---
 
     private void AssertCheckboxToggleable(string widgetName, string checkboxContent)
     {
-        using var _ = _fixture.ActivateAndSelect(widgetName);
-        var mainWindow = _fixture.GetMainWindow();
+        using var _ = Fixture.ActivateAndSelect(widgetName);
+        var mainWindow = Fixture.GetMainWindow();
 
-        var checkbox = _fixture.FindCheckBox(mainWindow, checkboxContent);
+        var checkbox = Fixture.FindCheckBox(mainWindow, checkboxContent);
         Assert.NotNull(checkbox);
 
         var initial = checkbox.IsChecked;
@@ -27,10 +25,10 @@ public class ConfigurationPanelTests
 
     private void AssertTextBoxEditable(string widgetName, string label, string testValue)
     {
-        using var _ = _fixture.ActivateAndSelect(widgetName);
-        var mainWindow = _fixture.GetMainWindow();
+        using var _ = Fixture.ActivateAndSelect(widgetName);
+        var mainWindow = Fixture.GetMainWindow();
 
-        var textBox = _fixture.FindTextBoxByLabel(mainWindow, label);
+        var textBox = Fixture.FindTextBoxByLabel(mainWindow, label);
         Assert.NotNull(textBox);
 
         var original = textBox.Text;
@@ -46,29 +44,29 @@ public class ConfigurationPanelTests
     [Fact]
     public void NoWidgetSelected_ShouldShowPlaceholder()
     {
-        Assert.NotNull(_fixture.GetMainWindow()
+        Assert.NotNull(Fixture.GetMainWindow()
             .FindFirstDescendant(cf => cf.ByText("Select an active widget to configure")));
     }
 
     [Fact]
     public void SelectWidget_ShouldShowWidgetSpecificSettings()
     {
-        using var _ = _fixture.ActivateAndSelect(WidgetNames.RelativeOverlay);
+        using var _ = Fixture.ActivateAndSelect(WidgetNames.RelativeOverlay);
 
-        Assert.NotNull(_fixture.GetMainWindow()
+        Assert.NotNull(Fixture.GetMainWindow()
             .FindFirstDescendant(cf => cf.ByText("COLUMNS")));
     }
 
     [Fact]
     public void SelectDifferentWidget_ShouldSwitchConfigPanel()
     {
-        using var _ = _fixture.ActivateWidgets(WidgetNames.RelativeOverlay, WidgetNames.LapTimer);
-        var mainWindow = _fixture.GetMainWindow();
+        using var _ = Fixture.ActivateWidgets(WidgetNames.RelativeOverlay, WidgetNames.LapTimer);
+        var mainWindow = Fixture.GetMainWindow();
 
-        _fixture.ClickActiveWidgetCard(mainWindow, WidgetNames.RelativeOverlay);
+        Fixture.ClickActiveWidgetCard(mainWindow, WidgetNames.RelativeOverlay);
         Assert.NotNull(mainWindow.FindFirstDescendant(cf => cf.ByText("COLUMNS")));
 
-        _fixture.ClickActiveWidgetCard(mainWindow, WidgetNames.LapTimer);
+        Fixture.ClickActiveWidgetCard(mainWindow, WidgetNames.LapTimer);
         Assert.NotNull(mainWindow.FindFirstDescendant(cf => cf.ByText("LAP TIMER SETTINGS")));
     }
 

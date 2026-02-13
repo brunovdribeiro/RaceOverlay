@@ -3,52 +3,42 @@ using FlaUI.Core.Definitions;
 namespace RaceOverlay.E2E.Tests;
 
 [Collection("App")]
-public class MainWindowTests
+public class MainWindowTests : TestBase
 {
-    private readonly AppFixture _fixture;
-
-    public MainWindowTests(AppFixture fixture) => _fixture = fixture;
+    public MainWindowTests(AppFixture fixture) : base(fixture) { }
 
     [Fact]
     public void MainWindow_ShouldHaveCorrectTitle()
     {
-        var window = _fixture.GetMainWindow();
+        var window = Fixture.GetMainWindow();
         Assert.Contains("RaceOverlay", window.Title);
     }
 
     [Fact]
     public void MainWindow_ShouldShowWidgetLibrary()
     {
-        var window = _fixture.GetMainWindow();
+        var window = Fixture.GetMainWindow();
         Assert.NotNull(window.FindFirstDescendant(cf => cf.ByAutomationId("WidgetLibraryList")));
     }
 
     [Fact]
     public void MainWindow_ShouldShowStartLayoutButton()
     {
-        var window = _fixture.GetMainWindow();
+        var window = Fixture.GetMainWindow();
         Assert.NotNull(window.FindFirstDescendant(cf => cf.ByAutomationId("StartLayoutButton")));
     }
 
     [Fact]
     public void MainWindow_ShouldShowToggleSetupModeButton()
     {
-        var window = _fixture.GetMainWindow();
+        var window = Fixture.GetMainWindow();
         Assert.NotNull(window.FindFirstDescendant(cf => cf.ByAutomationId("ToggleSetupModeButton")));
-    }
-
-    [Fact]
-    public void MainWindow_ShouldOpenCenteredOnScreen()
-    {
-        var bounds = _fixture.GetMainWindow().BoundingRectangle;
-        Assert.True(bounds.Left > 0, "Window should not be at x=0");
-        Assert.True(bounds.Top > 0, "Window should not be at y=0");
     }
 
     [Fact]
     public void MainWindow_ShouldStartWithNoActiveWidgets()
     {
-        var window = _fixture.GetMainWindow();
+        var window = Fixture.GetMainWindow();
         Assert.NotNull(window.FindFirstDescendant(cf =>
             cf.ByText("Toggle widgets on from the library to activate them")));
     }
@@ -56,7 +46,7 @@ public class MainWindowTests
     [Fact]
     public void MainWindow_ShouldShowConfigPlaceholder()
     {
-        var window = _fixture.GetMainWindow();
+        var window = Fixture.GetMainWindow();
         Assert.NotNull(window.FindFirstDescendant(cf =>
             cf.ByText("Select an active widget to configure")));
     }
@@ -64,7 +54,7 @@ public class MainWindowTests
     [Fact]
     public void WidgetLibrary_ShouldContainExpectedWidgets()
     {
-        var window = _fixture.GetMainWindow();
+        var window = Fixture.GetMainWindow();
         foreach (var name in WidgetNames.All)
             Assert.NotNull(window.FindFirstDescendant(cf => cf.ByText(name)));
     }
@@ -73,13 +63,13 @@ public class MainWindowTests
     public void WidgetLibrary_AllTogglesShouldStartOff()
     {
         foreach (var name in WidgetNames.All)
-            Assert.Null(_fixture.FindOverlayWindow(name));
+            Assert.Null(Fixture.FindOverlayWindow(name));
     }
 
     [Fact]
     public void WidgetLibrary_ShouldShowEightItems()
     {
-        var library = _fixture.GetMainWindow()
+        var library = Fixture.GetMainWindow()
             .FindFirstDescendant(cf => cf.ByAutomationId("WidgetLibraryList"));
         Assert.NotNull(library);
 

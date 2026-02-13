@@ -5,11 +5,9 @@ namespace RaceOverlay.E2E.Tests;
 /// unhandled exceptions from outside the process.
 /// </summary>
 [Collection("App")]
-public class ErrorDialogTests
+public class ErrorDialogTests : TestBase
 {
-    private readonly AppFixture _fixture;
-
-    public ErrorDialogTests(AppFixture fixture) => _fixture = fixture;
+    public ErrorDialogTests(AppFixture fixture) : base(fixture) { }
 
     [Fact(Skip = "Cannot trigger unhandled exception from E2E — requires app test-mode hook")]
     public void ErrorDialog_ShouldShowOnUnhandledException() { }

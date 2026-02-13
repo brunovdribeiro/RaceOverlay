@@ -1,13 +1,15 @@
 namespace RaceOverlay.E2E.Tests;
 
 [Collection("App")]
-public class StartLayoutTests(AppFixture fixture)
+public class StartLayoutTests : TestBase
 {
+    public StartLayoutTests(AppFixture fixture) : base(fixture) { }
+
     [Fact]
     public void StartLayout_MinimizesMainWindow()
     {
-        using var _ = fixture.ActivateWidgets(WidgetNames.Weather);
-        var mainWindow = fixture.GetMainWindow();
+        using var _ = Fixture.ActivateWidgets(WidgetNames.Weather);
+        var mainWindow = Fixture.GetMainWindow();
 
         var startButton = mainWindow.FindFirstDescendant(cf => cf.ByAutomationId("StartLayoutButton"));
         Assert.NotNull(startButton);
@@ -15,8 +17,8 @@ public class StartLayoutTests(AppFixture fixture)
         startButton.Click();
         Thread.Sleep(Waits.AppLifecycleMs);
 
-        mainWindow = fixture.GetMainWindow();
-        Assert.True(fixture.IsWindowMinimized(mainWindow),
+        mainWindow = Fixture.GetMainWindow();
+        Assert.True(Fixture.IsWindowMinimized(mainWindow),
             "Main window should be minimized after Start Layout");
 
         // Restore window for other tests
@@ -28,8 +30,8 @@ public class StartLayoutTests(AppFixture fixture)
     [Fact]
     public void StartLayout_OverlayWindowsRemainVisible()
     {
-        using var _ = fixture.ActivateWidgets(WidgetNames.LapTimer);
-        var mainWindow = fixture.GetMainWindow();
+        using var _ = Fixture.ActivateWidgets(WidgetNames.LapTimer);
+        var mainWindow = Fixture.GetMainWindow();
 
         var startButton = mainWindow.FindFirstDescendant(cf => cf.ByAutomationId("StartLayoutButton"));
         Assert.NotNull(startButton);
@@ -37,10 +39,10 @@ public class StartLayoutTests(AppFixture fixture)
         startButton.Click();
         Thread.Sleep(Waits.AppLifecycleMs);
 
-        Assert.NotNull(fixture.FindOverlayWindow(WidgetNames.LapTimer));
+        Assert.NotNull(Fixture.FindOverlayWindow(WidgetNames.LapTimer));
 
         // Restore main window
-        mainWindow = fixture.GetMainWindow();
+        mainWindow = Fixture.GetMainWindow();
         mainWindow.Patterns.Window.Pattern.SetWindowVisualState(
             FlaUI.Core.Definitions.WindowVisualState.Normal);
         Thread.Sleep(Waits.UISettleMs);

@@ -23,6 +23,7 @@ public class AppFixture : IDisposable
     [DllImport("user32.dll")]
     private static extern bool IsWindowVisible(IntPtr hWnd);
     private const int SW_SHOW = 5;
+    private const int SW_MINIMIZE = 6;
     private const int SW_RESTORE = 9;
 
     public static readonly string ConfigDir = Path.Combine(

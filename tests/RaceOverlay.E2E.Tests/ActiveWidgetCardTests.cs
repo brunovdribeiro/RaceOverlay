@@ -3,28 +3,26 @@ using FlaUI.Core.Tools;
 namespace RaceOverlay.E2E.Tests;
 
 [Collection("App")]
-public class ActiveWidgetCardTests
+public class ActiveWidgetCardTests : TestBase
 {
-    private readonly AppFixture _fixture;
-
-    public ActiveWidgetCardTests(AppFixture fixture) => _fixture = fixture;
+    public ActiveWidgetCardTests(AppFixture fixture) : base(fixture) { }
 
     [Fact]
     public void ToggleWidgetOn_ShouldCreateActiveWidgetCard()
     {
-        using var _ = _fixture.ActivateWidgets(WidgetNames.FuelCalculator);
+        using var _ = Fixture.ActivateWidgets(WidgetNames.FuelCalculator);
 
-        var card = _fixture.FindCardInCenterPanel(_fixture.GetMainWindow(), WidgetNames.FuelCalculator);
+        var card = Fixture.FindCardInCenterPanel(Fixture.GetMainWindow(), WidgetNames.FuelCalculator);
         Assert.NotNull(card);
     }
 
     [Fact]
     public void ToggleWidgetOff_ShouldRemoveActiveWidgetCard()
     {
-        var mainWindow = _fixture.GetMainWindow();
+        var mainWindow = Fixture.GetMainWindow();
 
-        _fixture.ToggleWidgetOn(mainWindow, WidgetNames.Inputs);
-        _fixture.ToggleWidgetOff(mainWindow, WidgetNames.Inputs);
+        Fixture.ToggleWidgetOn(mainWindow, WidgetNames.Inputs);
+        Fixture.ToggleWidgetOff(mainWindow, WidgetNames.Inputs);
         Thread.Sleep(Waits.UISettleMs);
 
         Assert.NotNull(mainWindow.FindFirstDescendant(cf =>
@@ -34,9 +32,9 @@ public class ActiveWidgetCardTests
     [Fact]
     public void ClickActiveWidgetCard_ShouldShowConfigPanel()
     {
-        using var _ = _fixture.ActivateAndSelect(WidgetNames.FuelCalculator);
+        using var _ = Fixture.ActivateAndSelect(WidgetNames.FuelCalculator);
 
-        var mainWindows = _fixture.GetMainWindow();
+        var mainWindows = Fixture.GetMainWindow();
         
         
         Assert.NotNull(mainWindows.FindFirstDescendant(cf => cf.ByText("FUEL SETTINGS")));
@@ -45,31 +43,31 @@ public class ActiveWidgetCardTests
     [Fact]
     public void ClickDifferentCard_ShouldSwitchConfigPanel()
     {
-        using var _ = _fixture.ActivateWidgets(WidgetNames.FuelCalculator, WidgetNames.Weather);
-        var mainWindow = _fixture.GetMainWindow();
+        using var _ = Fixture.ActivateWidgets(WidgetNames.FuelCalculator, WidgetNames.Weather);
+        var mainWindow = Fixture.GetMainWindow();
 
-        _fixture.ClickActiveWidgetCard(mainWindow, WidgetNames.FuelCalculator);
+        Fixture.ClickActiveWidgetCard(mainWindow, WidgetNames.FuelCalculator);
         Assert.NotNull(mainWindow.FindFirstDescendant(cf => cf.ByText("FUEL SETTINGS")));
 
-        _fixture.ClickActiveWidgetCard(mainWindow, WidgetNames.Weather);
+        Fixture.ClickActiveWidgetCard(mainWindow, WidgetNames.Weather);
         Assert.NotNull(mainWindow.FindFirstDescendant(cf => cf.ByText("WEATHER SETTINGS")));
     }
 
     [Fact]
     public void MultipleWidgetsActive_ShouldShowMultipleCards()
     {
-        using var _ = _fixture.ActivateWidgets(
+        using var _ = Fixture.ActivateWidgets(
             WidgetNames.RelativeOverlay, WidgetNames.Standings, WidgetNames.LapTimer);
-        var mainWindow = _fixture.GetMainWindow();
+        var mainWindow = Fixture.GetMainWindow();
 
         var relCard = Retry.WhileNull(
-            () => _fixture.FindCardInCenterPanel(mainWindow, WidgetNames.RelativeOverlay),
+            () => Fixture.FindCardInCenterPanel(mainWindow, WidgetNames.RelativeOverlay),
             timeout: Waits.OverlayTimeout, interval: Waits.RetryInterval);
         var standingsCard = Retry.WhileNull(
-            () => _fixture.FindCardInCenterPanel(mainWindow, WidgetNames.Standings),
+            () => Fixture.FindCardInCenterPanel(mainWindow, WidgetNames.Standings),
             timeout: Waits.OverlayTimeout, interval: Waits.RetryInterval);
         var lapTimerCard = Retry.WhileNull(
-            () => _fixture.FindCardInCenterPanel(mainWindow, WidgetNames.LapTimer),
+            () => Fixture.FindCardInCenterPanel(mainWindow, WidgetNames.LapTimer),
             timeout: Waits.OverlayTimeout, interval: Waits.RetryInterval);
 
         Assert.NotNull(relCard.Result);
