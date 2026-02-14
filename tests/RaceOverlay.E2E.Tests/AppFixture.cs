@@ -72,10 +72,31 @@ public class AppFixture : IDisposable
         return GetMainWindow();
     }
 
-    public Window? FindOverlayWindow(string title)
+    /// <summary>
+    /// Finds the single overlay host window.
+    /// </summary>
+    public Window? FindOverlayHostWindow()
     {
         var allWindows = App.GetAllTopLevelWindows(Automation);
-        return allWindows.FirstOrDefault(w => w.Title == title);
+        return allWindows.FirstOrDefault(w => w.Title == "RaceOverlay Overlay");
+    }
+
+    /// <summary>
+    /// Finds a widget panel inside the overlay host by its AutomationProperties.Name (display name).
+    /// Returns the element if found, null otherwise — compatible with existing test assertions.
+    /// </summary>
+    public AutomationElement? FindWidgetPanel(string widgetName)
+    {
+        var host = FindOverlayHostWindow();
+        return host?.FindFirstDescendant(cf => cf.ByName(widgetName));
+    }
+
+    /// <summary>
+    /// Backwards-compatible alias used by tests. Searches for a widget panel by display name.
+    /// </summary>
+    public AutomationElement? FindOverlayWindow(string widgetName)
+    {
+        return FindWidgetPanel(widgetName);
     }
 
     public bool IsWindowMinimized(Window window)

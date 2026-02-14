@@ -335,6 +335,5 @@ public partial class App : Application
 
         // Views
         services.AddTransient<MainWindow>();
-        services.AddTransient<WidgetOverlayWindow>();
     }
 }

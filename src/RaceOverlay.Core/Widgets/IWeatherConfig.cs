@@ -6,8 +6,6 @@ public interface IWeatherConfig : IWidgetConfiguration
 
     int UpdateIntervalMs { get; set; }
     bool UseMockData { get; set; }
-    double OverlayLeft { get; set; }
-    double OverlayTop { get; set; }
     bool ShowWind { get; set; }
     bool ShowForecast { get; set; }
 }

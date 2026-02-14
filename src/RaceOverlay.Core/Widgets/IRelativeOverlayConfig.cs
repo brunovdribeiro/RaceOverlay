@@ -38,14 +38,4 @@ public interface IRelativeOverlayConfig : IWidgetConfiguration
     bool ShowStint { get; set; }
     bool ShowLapTime { get; set; }
     bool ShowGap { get; set; }
-
-    /// <summary>
-    /// Saved overlay window left position. NaN means no saved position (use CenterScreen).
-    /// </summary>
-    double OverlayLeft { get; set; }
-
-    /// <summary>
-    /// Saved overlay window top position. NaN means no saved position (use CenterScreen).
-    /// </summary>
-    double OverlayTop { get; set; }
 }

@@ -1,15 +1,14 @@
 using System.Collections.Generic;
-using System.Windows;
 
 namespace RaceOverlay.App.Services;
 
 /// <summary>
-/// Service to manage widget dragging state and track open overlay windows.
+/// Service to manage widget dragging state and track open widget host panels.
 /// </summary>
 public class WidgetDragService
 {
     private static WidgetDragService? _instance;
-    private readonly List<WidgetOverlayWindow> _openWindows = new();
+    private readonly List<WidgetHostPanel> _openPanels = new();
     private bool _isDraggingEnabled;
 
     public static WidgetDragService Instance
@@ -28,33 +27,33 @@ public class WidgetDragService
             if (_isDraggingEnabled != value)
             {
                 _isDraggingEnabled = value;
-                UpdateAllWindows();
+                UpdateAllPanels();
             }
         }
     }
 
     /// <summary>
-    /// Registers an overlay window for drag management.
+    /// Registers a widget host panel for drag management.
     /// </summary>
-    public void RegisterWindow(WidgetOverlayWindow window)
+    public void RegisterPanel(WidgetHostPanel panel)
     {
-        if (!_openWindows.Contains(window))
+        if (!_openPanels.Contains(panel))
         {
-            _openWindows.Add(window);
-            window.SetDraggingEnabled(_isDraggingEnabled);
+            _openPanels.Add(panel);
+            panel.SetDraggingEnabled(_isDraggingEnabled);
         }
     }
 
     /// <summary>
-    /// Unregisters an overlay window.
+    /// Unregisters a widget host panel.
     /// </summary>
-    public void UnregisterWindow(WidgetOverlayWindow window)
+    public void UnregisterPanel(WidgetHostPanel panel)
     {
-        _openWindows.Remove(window);
+        _openPanels.Remove(panel);
     }
 
     /// <summary>
-    /// Toggles dragging mode for all windows.
+    /// Toggles dragging mode for all panels.
     /// </summary>
     public void ToggleDragging()
     {
@@ -62,15 +61,15 @@ public class WidgetDragService
     }
 
     /// <summary>
-    /// Updates all open windows with current dragging state.
+    /// Updates all open panels with current dragging state.
     /// </summary>
-    private void UpdateAllWindows()
+    private void UpdateAllPanels()
     {
-        foreach (var window in _openWindows.ToList())
+        foreach (var panel in _openPanels.ToList())
         {
-            if (window.IsLoaded)
+            if (panel.IsLoaded)
             {
-                window.SetDraggingEnabled(_isDraggingEnabled);
+                panel.SetDraggingEnabled(_isDraggingEnabled);
             }
         }
     }

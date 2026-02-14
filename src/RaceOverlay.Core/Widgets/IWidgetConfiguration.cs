@@ -10,4 +10,14 @@ public interface IWidgetConfiguration
     /// Gets the type name of the configuration, used for serialization and type identification.
     /// </summary>
     string ConfigurationType { get; }
+
+    /// <summary>
+    /// Gets or sets the horizontal position of the widget overlay on screen.
+    /// </summary>
+    double OverlayLeft { get; set; }
+
+    /// <summary>
+    /// Gets or sets the vertical position of the widget overlay on screen.
+    /// </summary>
+    double OverlayTop { get; set; }
 }

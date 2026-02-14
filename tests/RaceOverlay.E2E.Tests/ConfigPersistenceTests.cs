@@ -43,10 +43,11 @@ public class ConfigPersistenceTests : IDisposable
             ?? throw new InvalidOperationException("Main window did not appear.");
     }
 
-    private Window? FindOverlayWindow(string title)
+    private AutomationElement? FindOverlayWindow(string widgetName)
     {
         var allWindows = _app!.GetAllTopLevelWindows(_automation!);
-        return allWindows.FirstOrDefault(w => w.Title == title);
+        var host = allWindows.FirstOrDefault(w => w.Title == "RaceOverlay Overlay");
+        return host?.FindFirstDescendant(cf => cf.ByName(widgetName));
     }
 
     private AutomationElement? FindWidgetToggle(Window mainWindow, string widgetName)
@@ -92,10 +93,9 @@ public class ConfigPersistenceTests : IDisposable
         var mainWindow = LaunchAndGetMainWindow();
         Thread.Sleep(Waits.AppLifecycleMs);
 
-        // No overlay windows should be present
-        var allWindows = _app!.GetAllTopLevelWindows(_automation!);
-        var overlays = allWindows.Where(w => w.Title != mainWindow.Title).ToArray();
-        Assert.Empty(overlays);
+        // No widget panels should be present in the overlay host
+        foreach (var name in WidgetNames.All)
+            Assert.Null(FindOverlayWindow(name));
 
         Assert.NotNull(mainWindow.FindFirstDescendant(cf =>
             cf.ByText("Toggle widgets on from the library to activate them")));
@@ -110,8 +110,8 @@ public class ConfigPersistenceTests : IDisposable
         var mainWindow = LaunchAndGetMainWindow();
         Thread.Sleep(Waits.AppLifecycleMs);
 
-        var allWindows = _app!.GetAllTopLevelWindows(_automation!);
-        var overlays = allWindows.Where(w => w.Title != mainWindow.Title).ToArray();
-        Assert.Empty(overlays);
+        // No widget panels should be present in the overlay host
+        foreach (var name in WidgetNames.All)
+            Assert.Null(FindOverlayWindow(name));
     }
 }

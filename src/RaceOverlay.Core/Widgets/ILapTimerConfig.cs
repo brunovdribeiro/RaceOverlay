@@ -10,8 +10,6 @@ public interface ILapTimerConfig : IWidgetConfiguration
 
     int UpdateIntervalMs { get; set; }
     bool UseMockData { get; set; }
-    double OverlayLeft { get; set; }
-    double OverlayTop { get; set; }
     bool ShowDeltaToBest { get; set; }
     bool ShowLastLap { get; set; }
     bool ShowBestLap { get; set; }

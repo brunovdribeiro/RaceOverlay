@@ -10,8 +10,6 @@ public interface IStandingsConfig : IWidgetConfiguration
 
     int UpdateIntervalMs { get; set; }
     bool UseMockData { get; set; }
-    double OverlayLeft { get; set; }
-    double OverlayTop { get; set; }
     bool ShowClassColor { get; set; }
     bool ShowCarNumber { get; set; }
     bool ShowPositionsGained { get; set; }
