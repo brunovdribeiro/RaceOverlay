@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RaceOverlay.App"
+        xmlns:validation="clr-namespace:RaceOverlay.App.Validation"
         mc:Ignorable="d"
         Title="RaceOverlay - Widget Manager"
         AutomationProperties.AutomationId="MainWindow"
@@ -34,6 +35,21 @@
             <Setter Property="Padding" Value="6,4"/>
             <Setter Property="Width" Value="60"/>
             <Setter Property="Margin" Value="0,4"/>
+            <Setter Property="Validation.ErrorTemplate">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Border BorderBrush="{StaticResource RO.RedBrush}" BorderThickness="1.5" CornerRadius="2" Margin="-1">
+                            <AdornedElementPlaceholder/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="Validation.HasError" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource RO.RedBrush}"/>
+                    <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource Self}, Path=(Validation.Errors)[0].ErrorContent}"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
     </Window.Resources>
     <Grid>
@@ -194,17 +210,41 @@
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Drivers Ahead" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding DriversAhead, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}">
+                                            <TextBox.Text>
+                                                <Binding Path="DriversAhead" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:IntRangeValidationRule Min="1" Max="30"/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Drivers Behind" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding DriversBehind, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}">
+                                            <TextBox.Text>
+                                                <Binding Path="DriversBehind" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:IntRangeValidationRule Min="1" Max="30"/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding UpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}">
+                                            <TextBox.Text>
+                                                <Binding Path="UpdateIntervalMs" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:IntRangeValidationRule Min="10" Max="10000"/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
                                 </StackPanel>
 
@@ -225,7 +265,15 @@
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Tank Capacity (L)" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding FuelTankCapacity, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}">
+                                            <TextBox.Text>
+                                                <Binding Path="FuelTankCapacity" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:DoubleRangeValidationRule Min="0.1" Max="999"/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
                                 </StackPanel>
 
@@ -246,24 +294,56 @@
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding InputsUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}">
+                                            <TextBox.Text>
+                                                <Binding Path="InputsUpdateIntervalMs" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:IntRangeValidationRule Min="10" Max="10000"/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
 
                                     <TextBlock Text="COLORS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Throttle" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding InputsThrottleColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}" Width="80">
+                                            <TextBox.Text>
+                                                <Binding Path="InputsThrottleColor" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:HexColorValidationRule/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Brake" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding InputsBrakeColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}" Width="80">
+                                            <TextBox.Text>
+                                                <Binding Path="InputsBrakeColor" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:HexColorValidationRule/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Clutch" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding InputsClutchColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}" Width="80">
+                                            <TextBox.Text>
+                                                <Binding Path="InputsClutchColor" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:HexColorValidationRule/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
 
                                     <TextBlock Text="VISIBILITY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
@@ -288,12 +368,28 @@
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding StandingsUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}">
+                                            <TextBox.Text>
+                                                <Binding Path="StandingsUpdateIntervalMs" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:IntRangeValidationRule Min="10" Max="10000"/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Max Drivers" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding StandingsMaxDrivers, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}">
+                                            <TextBox.Text>
+                                                <Binding Path="StandingsMaxDrivers" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:IntRangeValidationRule Min="1" Max="60"/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
 
                                     <TextBlock Text="COLUMNS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
@@ -328,7 +424,15 @@
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding LapTimerUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}">
+                                            <TextBox.Text>
+                                                <Binding Path="LapTimerUpdateIntervalMs" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:IntRangeValidationRule Min="10" Max="10000"/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
 
                                     <TextBlock Text="VISIBILITY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
@@ -356,7 +460,15 @@
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding TrackMapUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}">
+                                            <TextBox.Text>
+                                                <Binding Path="TrackMapUpdateIntervalMs" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:IntRangeValidationRule Min="10" Max="10000"/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
 
                                     <TextBlock Text="VISIBILITY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
@@ -382,7 +494,15 @@
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding WeatherUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}">
+                                            <TextBox.Text>
+                                                <Binding Path="WeatherUpdateIntervalMs" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:IntRangeValidationRule Min="10" Max="10000"/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
 
                                     <TextBlock Text="VISIBILITY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
@@ -408,24 +528,56 @@
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding InputTraceUpdateIntervalMs, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}">
+                                            <TextBox.Text>
+                                                <Binding Path="InputTraceUpdateIntervalMs" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:IntRangeValidationRule Min="10" Max="10000"/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="History (seconds)" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding InputTraceHistorySeconds, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}">
+                                            <TextBox.Text>
+                                                <Binding Path="InputTraceHistorySeconds" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:IntRangeValidationRule Min="1" Max="60"/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
 
                                     <TextBlock Text="COLORS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Throttle" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding InputTraceThrottleColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}" Width="80">
+                                            <TextBox.Text>
+                                                <Binding Path="InputTraceThrottleColor" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:HexColorValidationRule/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
 
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Brake" Style="{StaticResource SettingsLabel}"/>
-                                        <TextBox Text="{Binding InputTraceBrakeColor, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SettingsTextBox}" Width="80"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}" Width="80">
+                                            <TextBox.Text>
+                                                <Binding Path="InputTraceBrakeColor" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:HexColorValidationRule/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
                                     </StackPanel>
                                 </StackPanel>
 
