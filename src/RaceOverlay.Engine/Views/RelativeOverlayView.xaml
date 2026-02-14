@@ -16,29 +16,54 @@
 
         <!-- Shared driver row template -->
         <DataTemplate x:Key="DriverRowTemplate">
-            <Border Background="{StaticResource RO.SurfaceBrush}"
-                    BorderBrush="{StaticResource RO.BorderBrush}"
+            <Border BorderBrush="{StaticResource RO.BorderBrush}"
                     BorderThickness="0,0,0,1" Padding="8,10">
-                <StackPanel Orientation="Horizontal">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="{StaticResource RO.SurfaceBrush}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding (ItemsControl.AlternationIndex),
+                                RelativeSource={RelativeSource AncestorType=ContentPresenter}}" Value="1">
+                                <Setter Property="Background" Value="{StaticResource RO.SurfaceLightBrush}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Rel_Position"/>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Rel_Class"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Rel_Elo"/>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Rel_Stint"/>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Rel_LapTime"/>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Rel_Gap"/>
+                    </Grid.ColumnDefinitions>
+
                     <!-- Position -->
-                    <TextBlock Text="{Binding Position}" FontSize="16" FontWeight="SemiBold" MinWidth="30"
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding Position}" FontSize="16" FontWeight="SemiBold" MinWidth="30"
                                Foreground="{StaticResource RO.ForegroundBrush}" VerticalAlignment="Center"
                                Visibility="{Binding DataContext.ShowPosition, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
                                Margin="0,0,8,0"/>
 
                     <!-- Class Color Stripe -->
-                    <Border Background="{Binding ClassColor, Converter={StaticResource ColorConv}}" Width="4" CornerRadius="2" VerticalAlignment="Stretch"
+                    <Border Grid.Column="1"
+                            Background="{Binding ClassColor, Converter={StaticResource ColorConv}}" Width="4" CornerRadius="2" VerticalAlignment="Stretch"
                             Visibility="{Binding DataContext.ShowClassColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
                             Margin="0,0,8,0"/>
 
                     <!-- Driver Name -->
-                    <TextBlock Text="{Binding DriverName}" FontSize="13" FontWeight="SemiBold" MinWidth="100"
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding DriverName}" FontSize="13" FontWeight="SemiBold" MinWidth="100"
                                Foreground="{StaticResource RO.ForegroundBrush}" VerticalAlignment="Center"
                                Visibility="{Binding DataContext.ShowDriverName, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
                                Margin="0,0,8,0"/>
 
                     <!-- Elo Badge -->
-                    <Border Background="{Binding EloGradeColor, Converter={StaticResource ColorConv}}" CornerRadius="4" Padding="6,4"
+                    <Border Grid.Column="3"
+                            Background="{Binding EloGradeColor, Converter={StaticResource ColorConv}}" CornerRadius="4" Padding="6,4"
                             Visibility="{Binding DataContext.ShowRating, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
                             Margin="0,0,8,0">
                         <TextBlock Text="{Binding EloGrade}" FontSize="11" FontWeight="Bold"
@@ -46,7 +71,8 @@
                     </Border>
 
                     <!-- Stint Badge -->
-                    <Border Background="#4B5563" CornerRadius="4" Padding="6,4"
+                    <Border Grid.Column="4"
+                            Background="#4B5563" CornerRadius="4" Padding="6,4"
                             Visibility="{Binding DataContext.ShowStint, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
                             Margin="0,0,8,0">
                         <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#E7EAF0">
@@ -55,23 +81,25 @@
                     </Border>
 
                     <!-- Current Lap Time -->
-                    <TextBlock FontSize="12" MinWidth="60"
+                    <TextBlock Grid.Column="5"
+                               FontSize="12" MinWidth="60"
                                Text="{Binding CurrentLapTime, Converter={StaticResource LapTimeConv}}"
                                Foreground="{StaticResource RO.ForegroundBrush}" VerticalAlignment="Center" TextAlignment="Right"
                                Visibility="{Binding DataContext.ShowLapTime, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
                                Margin="0,0,8,0"/>
 
                     <!-- Gap (seconds with sign) -->
-                    <TextBlock FontSize="12" MinWidth="60"
+                    <TextBlock Grid.Column="6"
+                               FontSize="12" MinWidth="60"
                                Text="{Binding GapToNextDriver, StringFormat={}{0:+0.000;-0.000;0.000}s}"
                                Foreground="{StaticResource RO.MutedBrush}" VerticalAlignment="Center" TextAlignment="Right"
                                Visibility="{Binding DataContext.ShowGap, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"/>
-                </StackPanel>
+                </Grid>
             </Border>
         </DataTemplate>
     </UserControl.Resources>
 
-    <Grid Margin="12">
+    <Grid Margin="12" Grid.IsSharedSizeScope="True">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -87,30 +115,45 @@
 
         <!-- Drivers Ahead Section -->
         <ItemsControl Grid.Row="1" ItemsSource="{Binding DriversAhead}"
-                      ItemTemplate="{StaticResource DriverRowTemplate}"/>
+                      ItemTemplate="{StaticResource DriverRowTemplate}"
+                      AlternationCount="2"/>
 
         <!-- Player Position (Highlighted) -->
         <Border Grid.Row="2" Background="#2D3E4F" BorderBrush="{StaticResource RO.MagentaBrush}" BorderThickness="0,2,0,2" Padding="8,12" Margin="0,4">
-            <StackPanel Orientation="Horizontal" DataContext="{Binding PlayerDriver}">
+            <Grid DataContext="{Binding PlayerDriver}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Rel_Position"/>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Rel_Class"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Rel_Elo"/>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Rel_Stint"/>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Rel_LapTime"/>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Rel_Gap"/>
+                </Grid.ColumnDefinitions>
+
                 <!-- Position -->
-                <TextBlock Text="{Binding Position}" FontSize="16" FontWeight="SemiBold" MinWidth="30"
+                <TextBlock Grid.Column="0"
+                           Text="{Binding Position}" FontSize="16" FontWeight="SemiBold" MinWidth="30"
                            Foreground="{StaticResource RO.ForegroundBrush}" VerticalAlignment="Center"
                            Visibility="{Binding DataContext.ShowPosition, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
                            Margin="0,0,8,0"/>
 
                 <!-- Class Color Stripe -->
-                <Border Background="{Binding ClassColor, Converter={StaticResource ColorConv}}" Width="4" CornerRadius="2" VerticalAlignment="Stretch"
+                <Border Grid.Column="1"
+                        Background="{Binding ClassColor, Converter={StaticResource ColorConv}}" Width="4" CornerRadius="2" VerticalAlignment="Stretch"
                         Visibility="{Binding DataContext.ShowClassColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
                         Margin="0,0,8,0"/>
 
                 <!-- Driver Name -->
-                <TextBlock Text="{Binding DriverName}" FontSize="13" FontWeight="SemiBold" MinWidth="100"
+                <TextBlock Grid.Column="2"
+                           Text="{Binding DriverName}" FontSize="13" FontWeight="SemiBold" MinWidth="100"
                            Foreground="{StaticResource RO.ForegroundBrush}" VerticalAlignment="Center"
                            Visibility="{Binding DataContext.ShowDriverName, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
                            Margin="0,0,8,0"/>
 
                 <!-- Elo Badge -->
-                <Border Background="{Binding EloGradeColor, Converter={StaticResource ColorConv}}" CornerRadius="4" Padding="6,4"
+                <Border Grid.Column="3"
+                        Background="{Binding EloGradeColor, Converter={StaticResource ColorConv}}" CornerRadius="4" Padding="6,4"
                         Visibility="{Binding DataContext.ShowRating, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
                         Margin="0,0,8,0">
                     <TextBlock Text="{Binding EloGrade}" FontSize="11" FontWeight="Bold"
@@ -118,7 +161,8 @@
                 </Border>
 
                 <!-- Stint Badge -->
-                <Border Background="#4B5563" CornerRadius="4" Padding="6,4"
+                <Border Grid.Column="4"
+                        Background="#4B5563" CornerRadius="4" Padding="6,4"
                         Visibility="{Binding DataContext.ShowStint, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
                         Margin="0,0,8,0">
                     <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#E7EAF0">
@@ -127,21 +171,24 @@
                 </Border>
 
                 <!-- Current Lap Time -->
-                <TextBlock FontSize="12" MinWidth="60"
+                <TextBlock Grid.Column="5"
+                           FontSize="12" MinWidth="60"
                            Text="{Binding CurrentLapTime, Converter={StaticResource LapTimeConv}}"
                            Foreground="{StaticResource RO.ForegroundBrush}" VerticalAlignment="Center" TextAlignment="Right"
                            Visibility="{Binding DataContext.ShowLapTime, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
                            Margin="0,0,8,0"/>
 
                 <!-- Gap (0.000 for player) -->
-                <TextBlock Text="0.000s" FontSize="12" MinWidth="60"
+                <TextBlock Grid.Column="6"
+                           Text="0.000s" FontSize="12" MinWidth="60"
                            Foreground="{StaticResource RO.MutedBrush}" VerticalAlignment="Center" TextAlignment="Right"
                            Visibility="{Binding DataContext.ShowGap, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"/>
-            </StackPanel>
+            </Grid>
         </Border>
 
         <!-- Drivers Behind Section -->
         <ItemsControl Grid.Row="3" ItemsSource="{Binding DriversBehind}"
-                      ItemTemplate="{StaticResource DriverRowTemplate}"/>
+                      ItemTemplate="{StaticResource DriverRowTemplate}"
+                      AlternationCount="2"/>
     </Grid>
 </UserControl>
