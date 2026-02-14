@@ -59,6 +59,9 @@ Full race leaderboard showing all drivers sorted by position:
 - Last lap times and delta to player
 - Pit status indicators
 
+**Gap to Competitors:**
+- Missing advanced filtering (e.g., "In Pits", "Class Only") (Planned)
+
 **Configuration Options:**
 - Max drivers to display (default: 20)
 - Toggle columns: Class Color, Car Number, Positions Gained, License, iRating, Car Brand, Interval, Gap, Last Lap, Delta, Pit Status
@@ -84,6 +87,9 @@ Tracks fuel consumption and calculates pit strategy:
 - Current lap / Total laps
 - Fuel needed to finish race
 - Fuel to add at next pit stop
+
+**Gap to Competitors:**
+- Missing "Refill amount" automation info (Planned)
 
 **Configuration Options:**
 - Fuel tank capacity (default: 110L)
@@ -120,6 +126,9 @@ Historical trace of steering, throttle, and brake inputs:
 - Player car highlighted
 - Class-based color coding
 - Sector markers
+
+**Gap to Competitors:**
+- Missing Zoom/Rotation features (Planned)
 
 **Configuration Options:**
 - Map size and zoom level
@@ -378,7 +387,14 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed development guide.
 - [ ] Audio spotter integration
 - [ ] Multi-monitor support
 
-### Phase 5: Community & Ecosystem
+### Phase 5: Planned Widgets (Feature Parity)
+- [ ] **Radar Widget** (Priority 1: Safety)
+- [ ] **Head-to-Head (Battle) Widget** (Priority 1: Competition)
+- [ ] **Pit Wall Widget** (Priority 1: Strategy)
+- [ ] **Social/Stream Integration** (Chat / Recent Follows)
+- [ ] **Driver Info & Stats** (Profile / Elo)
+
+### Phase 6: Community & Ecosystem
 - [ ] Plugin marketplace
 - [ ] Community widget sharing
 - [ ] API documentation
@@ -425,6 +441,11 @@ Please check existing issues and documentation before starting work.
 | Inputs Display | ✅ Mock data | ✅ |
 | Weather Widget | ✅ Mock data | ✅ |
 | Lap Timer | ✅ Mock data | ✅ |
+| Radar | 📅 Planned | ✅ |
+| Head-to-Head | 📅 Planned | ✅ |
+| Pit Wall | 📅 Planned | ✅ |
+| Social/Stream | 📅 Planned | ✅ |
+| Driver Info | 📅 Planned | ✅ |
 | iRacing Support | 🚧 In progress | ✅ |
 | Assetto Corsa | 📅 Planned | ✅ |
 | F1 24 | 📅 Planned | ✅ |
