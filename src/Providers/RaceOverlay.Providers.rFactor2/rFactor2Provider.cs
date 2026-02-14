@@ -1,4 +1,5 @@
 using RaceOverlay.Core.Providers;
+using RaceOverlay.Core.Services;
 
 namespace RaceOverlay.Providers.rFactor2;
 
@@ -8,6 +9,7 @@ public class rFactor2Provider : IGameProvider
 
     public string GameId => "rFactor2";
     public string DisplayName => "rFactor 2 / Le Mans Ultimate";
+    public ILiveTelemetryService TelemetryService => _dataService;
 
     public event EventHandler<TelemetryData>? DataReceived;
 

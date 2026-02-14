@@ -1,4 +1,5 @@
 using RaceOverlay.Core.Providers;
+using RaceOverlay.Core.Services;
 
 namespace RaceOverlay.Providers.iRacing;
 
@@ -8,6 +9,7 @@ public class IRacingProvider : IGameProvider
 
     public string GameId => "iRacing";
     public string DisplayName => "iRacing";
+    public ILiveTelemetryService TelemetryService => _dataService;
 
     public event EventHandler<TelemetryData>? DataReceived;
 

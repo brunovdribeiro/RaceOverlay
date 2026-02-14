@@ -13,6 +13,7 @@
     <Project Path="src/Providers/RaceOverlay.Providers.AssettoCorsa/RaceOverlay.Providers.AssettoCorsa.csproj" />
     <Project Path="src/Providers/RaceOverlay.Providers.F124/RaceOverlay.Providers.F124.csproj" />
     <Project Path="src/Providers/RaceOverlay.Providers.iRacing/RaceOverlay.Providers.iRacing.csproj" />
+    <Project Path="src/Providers/RaceOverlay.Providers.rFactor2/RaceOverlay.Providers.rFactor2.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/RaceOverlay.Core.Tests/RaceOverlay.Core.Tests.csproj" />

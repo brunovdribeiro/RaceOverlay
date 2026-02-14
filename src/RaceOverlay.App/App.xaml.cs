@@ -15,6 +15,7 @@ using RaceOverlay.Engine.Views;
 using RaceOverlay.Engine.ViewModels;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Providers.iRacing;
+using RaceOverlay.Providers.rFactor2;
 using Serilog;
 using Velopack;
 
@@ -37,7 +38,7 @@ public partial class App : Application
     }
 
     private IHost? _host;
-    private IRacingDataService? _dataService;
+    private IGameDetectionService? _gameDetectionService;
 
     /// <summary>
     /// Called when the application starts.
@@ -78,9 +79,9 @@ public partial class App : Application
                 })
                 .Build();
 
-            // Start the iRacing data service
-            _dataService = _host.Services.GetRequiredService<IRacingDataService>();
-            _dataService.Start();
+            // Start the game detection service
+            _gameDetectionService = _host.Services.GetRequiredService<IGameDetectionService>();
+            _gameDetectionService.Start();
 
             // Get the main window from DI and show it
             var mainWindow = _host.Services.GetRequiredService<MainWindow>();
@@ -176,7 +177,7 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         Log.Information("RaceOverlay shutting down");
-        _dataService?.Stop();
+        _gameDetectionService?.Stop();
         _host?.Dispose();
         Log.CloseAndFlush();
         base.OnExit(e);
@@ -187,10 +188,34 @@ public partial class App : Application
     /// </summary>
     private static void ConfigureServices(IServiceCollection services)
     {
-        // iRacing telemetry service (singleton — shared across all widgets)
+        // Game providers and their telemetry services
+
+        // iRacing
         services.AddSingleton<IRacingDataService>();
-        services.AddSingleton<ILiveTelemetryService>(sp => sp.GetRequiredService<IRacingDataService>());
-        services.AddSingleton<IGameProvider, IRacingProvider>();
+        services.AddSingleton<IRacingProvider>();
+
+        // rFactor 2
+        services.AddSingleton<rFactor2DataService>();
+        services.AddSingleton<rFactor2Provider>();
+
+        // Game detection service
+        services.AddSingleton<IGameDetectionService>(sp =>
+        {
+            var detectionService = new GameDetectionService(sp, sp.GetRequiredService<ILogger<GameDetectionService>>());
+
+            // Register all game providers
+            detectionService.RegisterProvider(sp.GetRequiredService<IRacingProvider>());
+            detectionService.RegisterProvider(sp.GetRequiredService<rFactor2Provider>());
+
+            return detectionService;
+        });
+
+        // Provide ILiveTelemetryService - delegates to the active game's service (or demo mode)
+        services.AddSingleton<ILiveTelemetryService>(sp =>
+        {
+            var detectionService = (GameDetectionService)sp.GetRequiredService<IGameDetectionService>();
+            return detectionService.ActiveTelemetryService;
+        });
 
         // Widget system
         services.AddSingleton<IWidgetRegistry>(sp =>

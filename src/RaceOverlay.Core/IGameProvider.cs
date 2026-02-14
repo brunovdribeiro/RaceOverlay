@@ -1,4 +1,6 @@
-﻿namespace RaceOverlay.Core.Providers;
+using RaceOverlay.Core.Services;
+
+namespace RaceOverlay.Core.Providers;
 
 /// <summary>
 /// Contract for game telemetry providers
@@ -14,6 +16,11 @@ public interface IGameProvider
     /// Display name of the game
     /// </summary>
     string DisplayName { get; }
+
+    /// <summary>
+    /// The telemetry service for this game
+    /// </summary>
+    ILiveTelemetryService TelemetryService { get; }
 
     /// <summary>
     /// Check if the game is currently running

@@ -4,6 +4,7 @@
     <ProjectReference Include="..\RaceOverlay.Core\RaceOverlay.Core.csproj" />
     <ProjectReference Include="..\RaceOverlay.Engine\RaceOverlay.Engine.csproj" />
     <ProjectReference Include="..\Providers\RaceOverlay.Providers.iRacing\RaceOverlay.Providers.iRacing.csproj" />
+    <ProjectReference Include="..\Providers\RaceOverlay.Providers.rFactor2\RaceOverlay.Providers.rFactor2.csproj" />
   </ItemGroup>
 
   <ItemGroup>

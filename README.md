@@ -2,7 +2,7 @@
 
 **A powerful, customizable overlay system for sim racing games**
 
-RaceOverlay is a Windows desktop application that displays real-time telemetry data and customizable widgets on top of racing simulators like iRacing, Assetto Corsa, and F1 24. Think of it as a modular, developer-friendly alternative to RaceLabs with a plugin-based architecture.
+RaceOverlay is a Windows desktop application that displays real-time telemetry data and customizable widgets on top of racing simulators like iRacing, rFactor 2, Le Mans Ultimate, Assetto Corsa, and F1 24. Think of it as a modular, developer-friendly alternative to RaceLabs with a plugin-based architecture.
 
 ---
 
@@ -25,8 +25,10 @@ RaceOverlay aims to provide sim racing enthusiasts with:
 - ✅ Transparent, click-through overlay windows
 - ✅ Widget drag/reposition mode (CTRL+F12)
 - ✅ Dark theme with custom color palette
-- ✅ Multiple functional widgets with mock data
-- ⏳ Game provider implementations (in progress)
+- ✅ 9 functional widgets implemented
+- ✅ Automatic game detection with demo mode
+- ✅ iRacing support with live telemetry
+- ✅ rFactor 2 / Le Mans Ultimate support
 
 ### Keyboard Shortcuts
 | Shortcut | Action |
@@ -147,6 +149,51 @@ Current and forecasted weather conditions:
 - Temperature units (Celsius/Fahrenheit)
 - Update interval (default: 5000ms)
 
+### 9. **Radar Widget** (`radar`)
+Top-down proximity radar showing cars around you:
+- Player car centered in view
+- Surrounding cars as colored rectangles
+- Class-based color coding
+- Real-time positioning based on track distance and lateral offset
+- Configurable detection range
+
+**Configuration Options:**
+- Detection range (default: 100 meters)
+- Radar size and scale
+- Update interval (default: 50ms)
+
+---
+
+## 🎮 Game Detection & Demo Mode
+
+RaceOverlay features intelligent game detection with automatic switching:
+
+### How It Works
+1. **Demo Mode**: On startup, the app runs in demo mode with simulated telemetry
+   - Realistic racing data generated at 60Hz
+   - 20 virtual drivers, dynamic speed/RPM/gear changes
+   - Full widget functionality without requiring a game
+
+2. **Automatic Detection**: The app continuously scans for supported games
+   - Checks for iRacing (via shared memory)
+   - Checks for rFactor 2 / Le Mans Ultimate (via process detection + shared memory)
+
+3. **Seamless Connection**: When a game is detected
+   - Demo mode stops automatically
+   - Connects to the game's telemetry feed
+   - Detection pauses while game is running (no resource waste)
+
+4. **Auto Disconnect**: When the game closes
+   - Returns to demo mode automatically
+   - Detection resumes to watch for next game session
+
+### Supported Games
+- ✅ **iRacing** - Full telemetry support via iRacing SDK
+- ✅ **rFactor 2** - Full telemetry support via shared memory
+- ✅ **Le Mans Ultimate** - Same as rFactor 2 (uses same engine)
+- 📅 **Assetto Corsa** - Planned
+- 📅 **F1 24** - Planned
+
 ---
 
 ## 🛠️ Tech Stack
@@ -185,10 +232,11 @@ RaceOverlay/
 │   │   ├── Services/                  # Application services (WidgetDragService)
 │   │   └── Themes/                    # Dark theme color palette
 │   │
-│   └── Providers/                     # Game-specific telemetry providers (scaffolded)
-│       ├── RaceOverlay.Providers.iRacing/
-│       ├── RaceOverlay.Providers.AssettoCorsa/
-│       └── RaceOverlay.Providers.F124/
+│   └── Providers/                     # Game-specific telemetry providers
+│       ├── RaceOverlay.Providers.iRacing/      # ✅ Implemented
+│       ├── RaceOverlay.Providers.rFactor2/     # ✅ Implemented (includes LMU)
+│       ├── RaceOverlay.Providers.AssettoCorsa/ # 📅 Planned
+│       └── RaceOverlay.Providers.F124/         # 📅 Planned
 │
 └── tests/
     ├── RaceOverlay.Core.Tests/
@@ -236,11 +284,13 @@ dotnet test
 
 ### Quick Start
 1. Launch `RaceOverlay.App`
-2. Select widgets from the control panel
-3. Press **CTRL+F12** to enable drag mode
-4. Position widgets as desired
-5. Press **CTRL+F12** again to lock positions
-6. Start your racing simulator (currently showing mock data)
+2. The app starts in **demo mode** with simulated telemetry
+3. Select widgets from the control panel
+4. Press **CTRL+F12** to enable drag mode
+5. Position widgets as desired
+6. Press **CTRL+F12** again to lock positions
+7. Start your racing simulator (iRacing or rFactor 2 / Le Mans Ultimate)
+8. The app automatically detects the game and switches to live telemetry
 
 ---
 
@@ -283,7 +333,7 @@ Modular overlay components that:
 - Support custom configuration
 - Manage their own lifecycle
 
-**Current count:** 8 widgets implemented
+**Current count:** 9 widgets implemented
 
 #### 3. **Widget Registry** (`IWidgetRegistry`)
 Service that:
@@ -369,16 +419,19 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed development guide.
 - [x] Widget drag/reposition
 - [x] Basic widgets implementation
 
-### Phase 2: Game Integration 🚧 (Current)
-- [ ] iRacing telemetry provider
-- [ ] Real telemetry data integration
-- [ ] Session state management
-- [ ] Multi-class race support
+### Phase 2: Game Integration ✅
+- [x] iRacing telemetry provider
+- [x] rFactor 2 / Le Mans Ultimate telemetry provider
+- [x] Real telemetry data integration
+- [x] Automatic game detection with demo mode fallback
+- [x] Session state management
+- [x] Multi-class race support
 
-### Phase 3: Configuration & Persistence
-- [ ] Widget configuration UI
-- [ ] Position/layout saving (JSON)
+### Phase 3: Configuration & Persistence 🚧 (Current)
+- [x] Widget configuration system
+- [x] Position/layout saving (JSON)
 - [ ] Per-game/track profiles
+- [ ] Configuration UI in control panel
 - [ ] Preset import/export
 
 ### Phase 4: Advanced Features
@@ -387,8 +440,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed development guide.
 - [ ] Audio spotter integration
 - [ ] Multi-monitor support
 
-### Phase 5: Planned Widgets (Feature Parity)
-- [ ] **Radar Widget** (Priority 1: Safety)
+### Phase 5: Additional Widgets (Feature Parity)
+- [x] **Radar Widget** (Priority 1: Safety) ✅
 - [ ] **Head-to-Head (Battle) Widget** (Priority 1: Competition)
 - [ ] **Pit Wall Widget** (Priority 1: Strategy)
 - [ ] **Social/Stream Integration** (Chat / Recent Follows)
@@ -434,21 +487,24 @@ Please check existing issues and documentation before starting work.
 
 | Feature | RaceOverlay | RaceLabs |
 |---------|-------------|----------|
-| Relative Overlay | ✅ Mock data | ✅ |
-| Standings | ✅ Mock data | ✅ |
-| Fuel Calculator | ✅ Mock data | ✅ |
-| Track Map | ✅ Mock data | ✅ |
-| Inputs Display | ✅ Mock data | ✅ |
-| Weather Widget | ✅ Mock data | ✅ |
-| Lap Timer | ✅ Mock data | ✅ |
-| Radar | 📅 Planned | ✅ |
+| Relative Overlay | ✅ Live data | ✅ |
+| Standings | ✅ Live data | ✅ |
+| Fuel Calculator | ✅ Live data | ✅ |
+| Track Map | ✅ Live data | ✅ |
+| Inputs Display | ✅ Live data | ✅ |
+| Weather Widget | ✅ Live data | ✅ |
+| Lap Timer | ✅ Live data | ✅ |
+| Radar | ✅ Live data | ✅ |
 | Head-to-Head | 📅 Planned | ✅ |
 | Pit Wall | 📅 Planned | ✅ |
 | Social/Stream | 📅 Planned | ✅ |
 | Driver Info | 📅 Planned | ✅ |
-| iRacing Support | 🚧 In progress | ✅ |
+| iRacing Support | ✅ | ✅ |
+| rFactor 2 / LMU | ✅ | ❌ |
 | Assetto Corsa | 📅 Planned | ✅ |
 | F1 24 | 📅 Planned | ✅ |
+| Demo Mode | ✅ | ❌ |
+| Auto Game Detection | ✅ | ❌ |
 | Open Source | ✅ | ❌ |
 | Customizable | ✅ Fully | ⚠️ Limited |
 | Free | ✅ | ⚠️ Freemium |
