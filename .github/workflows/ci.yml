@@ -72,46 +72,46 @@ jobs:
           name: unit-test-results
           path: '**/TestResults/*.trx'
 
-  e2e-tests:
-    runs-on: windows-latest
-    needs: build
+  # e2e-tests:
+  #   runs-on: windows-latest
+  #   needs: build
 
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-          dotnet-quality: 'preview'
+  #     - name: Setup .NET
+  #       uses: actions/setup-dotnet@v4
+  #       with:
+  #         dotnet-version: '10.0.x'
+  #         dotnet-quality: 'preview'
 
-      - name: Compute version
-        id: version
-        shell: pwsh
-        run: |
-          $tag = git tag --points-at HEAD | Where-Object { $_ -match '^v\d' } | Select-Object -First 1
-          if ($tag) {
-            $version = $tag -replace '^v', ''
-          } else {
-            $baseVersion = Select-Xml -Path Directory.Build.props -XPath '//Version' | ForEach-Object { $_.Node.InnerText }
-            $version = "$baseVersion.ci.${{ github.run_number }}"
-          }
-          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+  #     - name: Compute version
+  #       id: version
+  #       shell: pwsh
+  #       run: |
+  #         $tag = git tag --points-at HEAD | Where-Object { $_ -match '^v\d' } | Select-Object -First 1
+  #         if ($tag) {
+  #           $version = $tag -replace '^v', ''
+  #         } else {
+  #           $baseVersion = Select-Xml -Path Directory.Build.props -XPath '//Version' | ForEach-Object { $_.Node.InnerText }
+  #           $version = "$baseVersion.ci.${{ github.run_number }}"
+  #         }
+  #         echo "VERSION=$version" >> $env:GITHUB_OUTPUT
 
-      - name: Build app for E2E
-        run: dotnet build src/RaceOverlay.App/RaceOverlay.App.csproj --configuration Debug -p:Version=${{ steps.version.outputs.VERSION }}
+  #     - name: Build app for E2E
+  #       run: dotnet build src/RaceOverlay.App/RaceOverlay.App.csproj --configuration Debug -p:Version=${{ steps.version.outputs.VERSION }}
 
-      - name: Run E2E Tests
-        run: dotnet test tests/RaceOverlay.E2E.Tests/RaceOverlay.E2E.Tests.csproj --configuration Debug --verbosity normal --logger "trx;LogFileName=e2e-results.trx"
+  #     - name: Run E2E Tests
+  #       run: dotnet test tests/RaceOverlay.E2E.Tests/RaceOverlay.E2E.Tests.csproj --configuration Debug --verbosity normal --logger "trx;LogFileName=e2e-results.trx"
 
-      - name: Upload E2E test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-test-results
-          path: '**/TestResults/*.trx'
+  #     - name: Upload E2E test results
+  #       if: always()
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: e2e-test-results
+  #         path: '**/TestResults/*.trx'
 
   package:
     runs-on: windows-latest

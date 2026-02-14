@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/deployment/">
+    <File Path=".github/workflows/ci.yml" />
+  </Folder>
   <Folder Name="/docs/">
     <File Path="docs/ARCHITECTURE.md" />
     <File Path="docs/commercial-roadmap.md" />
