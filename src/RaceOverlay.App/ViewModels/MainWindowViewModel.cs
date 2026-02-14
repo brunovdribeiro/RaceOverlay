@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using RaceOverlay.App.Models;
 using RaceOverlay.App.Services;
 using RaceOverlay.Core.Widgets;
+using RaceOverlay.Engine.Factories;
 using RaceOverlay.Engine.Widgets;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IWidgetRegistry _widgetRegistry;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<MainWindowViewModel> _logger;
+    private readonly WidgetViewFactoryRegistry _factoryRegistry;
     private readonly ConfigurationPersistenceService _persistenceService = new();
     private readonly Dictionary<string, IWidget> _activeWidgets = new();
     private readonly Dictionary<string, WidgetHostPanel> _activeHostPanels = new();
@@ -199,11 +201,12 @@ public partial class MainWindowViewModel : ObservableObject
 
     public string SetupModeButtonText => IsSetupMode ? "Exit Setup Mode (Ctrl+F1)" : "Enter Setup Mode (Ctrl+F1)";
 
-    public MainWindowViewModel(IWidgetRegistry widgetRegistry, IServiceProvider serviceProvider, ILogger<MainWindowViewModel> logger)
+    public MainWindowViewModel(IWidgetRegistry widgetRegistry, IServiceProvider serviceProvider, ILogger<MainWindowViewModel> logger, WidgetViewFactoryRegistry factoryRegistry)
     {
         _widgetRegistry = widgetRegistry ?? throw new ArgumentNullException(nameof(widgetRegistry));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _factoryRegistry = factoryRegistry ?? throw new ArgumentNullException(nameof(factoryRegistry));
 
         LoadWidgetLibrary();
     }
@@ -232,112 +235,51 @@ public partial class MainWindowViewModel : ObservableObject
         LoadConfigForWidget(newValue.WidgetId);
     }
 
+    private static readonly Dictionary<string, (Func<IWidgetConfiguration, bool> IsMatch, Func<IWidgetConfiguration> CreateDefault)> ConfigTypeMap = new()
+    {
+        ["relative-overlay"] = (c => c is IRelativeOverlayConfig, () => new RelativeOverlayConfig()),
+        ["fuel-calculator"] = (c => c is IFuelCalculatorConfig, () => new FuelCalculatorConfig()),
+        ["inputs"] = (c => c is IInputsConfig, () => new InputsConfig()),
+        ["input-trace"] = (c => c is IInputTraceConfig, () => new InputTraceConfig()),
+        ["standings"] = (c => c is IStandingsConfig, () => new StandingsConfig()),
+        ["lap-timer"] = (c => c is ILapTimerConfig, () => new LapTimerConfig()),
+        ["track-map"] = (c => c is ITrackMapConfig, () => new TrackMapConfig()),
+        ["weather"] = (c => c is IWeatherConfig, () => new WeatherConfig()),
+    };
+
     private void LoadConfigForWidget(string widgetId)
     {
-        if (widgetId == "fuel-calculator")
+        var config = ResolveConfig(widgetId);
+        LoadConfigIntoUI(widgetId, config);
+    }
+
+    private IWidgetConfiguration ResolveConfig(string widgetId)
+    {
+        if (!ConfigTypeMap.TryGetValue(widgetId, out var entry))
+            return new RelativeOverlayConfig();
+
+        if (_savedConfigs.TryGetValue(widgetId, out var saved) && entry.IsMatch(saved))
+            return saved;
+
+        var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
+        if (instance?.Configuration is { } cfg && entry.IsMatch(cfg))
+            return cfg;
+
+        return entry.CreateDefault();
+    }
+
+    private void LoadConfigIntoUI(string widgetId, IWidgetConfiguration config)
+    {
+        switch (widgetId)
         {
-            if (_savedConfigs.TryGetValue(widgetId, out var saved) && saved is IFuelCalculatorConfig fuelConfig)
-                LoadConfigFromFuelWidget(fuelConfig);
-            else
-            {
-                var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
-                if (instance?.Configuration is IFuelCalculatorConfig config)
-                    LoadConfigFromFuelWidget(config);
-                else
-                    LoadConfigFromFuelWidget(new FuelCalculatorConfig());
-            }
-        }
-        else if (widgetId == "inputs")
-        {
-            if (_savedConfigs.TryGetValue(widgetId, out var saved) && saved is IInputsConfig inputsConfig)
-                LoadConfigFromInputsWidget(inputsConfig);
-            else
-            {
-                var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
-                if (instance?.Configuration is IInputsConfig config)
-                    LoadConfigFromInputsWidget(config);
-                else
-                    LoadConfigFromInputsWidget(new InputsConfig());
-            }
-        }
-        else if (widgetId == "input-trace")
-        {
-            if (_savedConfigs.TryGetValue(widgetId, out var saved) && saved is IInputTraceConfig inputTraceConfig)
-                LoadConfigFromInputTraceWidget(inputTraceConfig);
-            else
-            {
-                var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
-                if (instance?.Configuration is IInputTraceConfig config)
-                    LoadConfigFromInputTraceWidget(config);
-                else
-                    LoadConfigFromInputTraceWidget(new InputTraceConfig());
-            }
-        }
-        else if (widgetId == "standings")
-        {
-            if (_savedConfigs.TryGetValue(widgetId, out var saved) && saved is IStandingsConfig standingsConfig)
-                LoadConfigFromStandingsWidget(standingsConfig);
-            else
-            {
-                var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
-                if (instance?.Configuration is IStandingsConfig config)
-                    LoadConfigFromStandingsWidget(config);
-                else
-                    LoadConfigFromStandingsWidget(new StandingsConfig());
-            }
-        }
-        else if (widgetId == "lap-timer")
-        {
-            if (_savedConfigs.TryGetValue(widgetId, out var saved) && saved is ILapTimerConfig lapTimerConfig)
-                LoadConfigFromLapTimerWidget(lapTimerConfig);
-            else
-            {
-                var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
-                if (instance?.Configuration is ILapTimerConfig config)
-                    LoadConfigFromLapTimerWidget(config);
-                else
-                    LoadConfigFromLapTimerWidget(new LapTimerConfig());
-            }
-        }
-        else if (widgetId == "track-map")
-        {
-            if (_savedConfigs.TryGetValue(widgetId, out var saved) && saved is ITrackMapConfig trackMapConfig)
-                LoadConfigFromTrackMapWidget(trackMapConfig);
-            else
-            {
-                var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
-                if (instance?.Configuration is ITrackMapConfig config)
-                    LoadConfigFromTrackMapWidget(config);
-                else
-                    LoadConfigFromTrackMapWidget(new TrackMapConfig());
-            }
-        }
-        else if (widgetId == "weather")
-        {
-            if (_savedConfigs.TryGetValue(widgetId, out var saved) && saved is IWeatherConfig weatherConfig)
-                LoadConfigFromWeatherWidget(weatherConfig);
-            else
-            {
-                var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
-                if (instance?.Configuration is IWeatherConfig config)
-                    LoadConfigFromWeatherWidget(config);
-                else
-                    LoadConfigFromWeatherWidget(new WeatherConfig());
-            }
-        }
-        else
-        {
-            // Relative Overlay
-            if (_savedConfigs.TryGetValue(widgetId, out var saved) && saved is IRelativeOverlayConfig relConfig)
-                LoadConfigFromRelativeWidget(relConfig);
-            else
-            {
-                var instance = _activeWidgets.Values.FirstOrDefault(w => w.WidgetId == widgetId);
-                if (instance?.Configuration is IRelativeOverlayConfig config)
-                    LoadConfigFromRelativeWidget(config);
-                else
-                    LoadConfigFromRelativeWidget(new RelativeOverlayConfig());
-            }
+            case "relative-overlay": LoadConfigFromRelativeWidget((IRelativeOverlayConfig)config); break;
+            case "fuel-calculator": LoadConfigFromFuelWidget((IFuelCalculatorConfig)config); break;
+            case "inputs": LoadConfigFromInputsWidget((IInputsConfig)config); break;
+            case "input-trace": LoadConfigFromInputTraceWidget((IInputTraceConfig)config); break;
+            case "standings": LoadConfigFromStandingsWidget((IStandingsConfig)config); break;
+            case "lap-timer": LoadConfigFromLapTimerWidget((ILapTimerConfig)config); break;
+            case "track-map": LoadConfigFromTrackMapWidget((ITrackMapConfig)config); break;
+            case "weather": LoadConfigFromWeatherWidget((IWeatherConfig)config); break;
         }
     }
 
@@ -478,337 +420,107 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnWeatherShowWindChanged(bool value) => PushWeatherConfigToActiveWidgets();
     partial void OnWeatherShowForecastChanged(bool value) => PushWeatherConfigToActiveWidgets();
 
-    private void PushRelativeConfigToActiveWidgets()
+    private void PushConfigToActiveWidgets(string widgetId, IWidgetConfiguration config)
     {
-        if (SelectedConfigWidgetId != "relative-overlay") return;
+        if (SelectedConfigWidgetId != widgetId) return;
 
-        double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedConfigWidgetId, out var existing))
+        // Preserve overlay position from any previously saved config
+        if (_savedConfigs.TryGetValue(widgetId, out var existing))
         {
-            left = existing.OverlayLeft;
-            top = existing.OverlayTop;
+            config.OverlayLeft = existing.OverlayLeft;
+            config.OverlayTop = existing.OverlayTop;
         }
 
-        var config = new RelativeOverlayConfig
-        {
-            ShowPosition = ShowPosition,
-            ShowClassColor = ShowClassColor,
-            ShowDriverName = ShowDriverName,
-            ShowRating = ShowRating,
-            ShowStint = ShowStint,
-            ShowLapTime = ShowLapTime,
-            ShowGap = ShowGap,
-            DriversAhead = DriversAhead,
-            DriversBehind = DriversBehind,
-            UpdateIntervalMs = UpdateIntervalMs,
-            OverlayLeft = left,
-            OverlayTop = top
-        };
-
-        _savedConfigs[SelectedConfigWidgetId] = config;
+        _savedConfigs[widgetId] = config;
 
         foreach (var kv in _activeWidgets)
         {
-            if (kv.Key.StartsWith(SelectedConfigWidgetId))
-            {
+            if (kv.Key.StartsWith(widgetId))
                 kv.Value.UpdateConfiguration(config);
-            }
         }
 
         foreach (var kv in _activeHostPanels)
         {
-            if (kv.Key.StartsWith(SelectedConfigWidgetId))
-            {
-                kv.Value.ApplyColumnVisibility(config);
-            }
+            if (kv.Key.StartsWith(widgetId))
+                kv.Value.ApplyConfig(config);
         }
     }
 
-    private void PushInputsConfigToActiveWidgets()
+    private void PushRelativeConfigToActiveWidgets() => PushConfigToActiveWidgets("relative-overlay", new RelativeOverlayConfig
     {
-        if (SelectedConfigWidgetId != "inputs") return;
+        ShowPosition = ShowPosition,
+        ShowClassColor = ShowClassColor,
+        ShowDriverName = ShowDriverName,
+        ShowRating = ShowRating,
+        ShowStint = ShowStint,
+        ShowLapTime = ShowLapTime,
+        ShowGap = ShowGap,
+        DriversAhead = DriversAhead,
+        DriversBehind = DriversBehind,
+        UpdateIntervalMs = UpdateIntervalMs,
+    });
 
-        double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedConfigWidgetId, out var existing))
-        {
-            left = existing.OverlayLeft;
-            top = existing.OverlayTop;
-        }
-
-        var config = new InputsConfig
-        {
-            UpdateIntervalMs = InputsUpdateIntervalMs,
-            ThrottleColor = InputsThrottleColor,
-            BrakeColor = InputsBrakeColor,
-            ClutchColor = InputsClutchColor,
-            ShowClutch = InputsShowClutch,
-            OverlayLeft = left,
-            OverlayTop = top
-        };
-
-        _savedConfigs[SelectedConfigWidgetId] = config;
-
-        foreach (var kv in _activeWidgets)
-        {
-            if (kv.Key.StartsWith(SelectedConfigWidgetId))
-            {
-                kv.Value.UpdateConfiguration(config);
-            }
-        }
-
-        foreach (var kv in _activeHostPanels)
-        {
-            if (kv.Key.StartsWith(SelectedConfigWidgetId))
-            {
-                kv.Value.ApplyInputsConfig(config);
-            }
-        }
-    }
-
-    private void PushInputTraceConfigToActiveWidgets()
+    private void PushFuelConfigToActiveWidgets() => PushConfigToActiveWidgets("fuel-calculator", new FuelCalculatorConfig
     {
-        if (SelectedConfigWidgetId != "input-trace") return;
+        FuelTankCapacity = FuelTankCapacity,
+    });
 
-        double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedConfigWidgetId, out var existing))
-        {
-            left = existing.OverlayLeft;
-            top = existing.OverlayTop;
-        }
-
-        var config = new InputTraceConfig
-        {
-            UpdateIntervalMs = InputTraceUpdateIntervalMs,
-            ThrottleColor = InputTraceThrottleColor,
-            BrakeColor = InputTraceBrakeColor,
-            HistorySeconds = InputTraceHistorySeconds,
-            OverlayLeft = left,
-            OverlayTop = top
-        };
-
-        _savedConfigs[SelectedConfigWidgetId] = config;
-
-        foreach (var kv in _activeWidgets)
-        {
-            if (kv.Key.StartsWith(SelectedConfigWidgetId))
-            {
-                kv.Value.UpdateConfiguration(config);
-            }
-        }
-
-        foreach (var kv in _activeHostPanels)
-        {
-            if (kv.Key.StartsWith(SelectedConfigWidgetId))
-            {
-                kv.Value.ApplyInputTraceConfig(config);
-            }
-        }
-    }
-
-    private void PushStandingsConfigToActiveWidgets()
+    private void PushInputsConfigToActiveWidgets() => PushConfigToActiveWidgets("inputs", new InputsConfig
     {
-        if (SelectedConfigWidgetId != "standings") return;
+        UpdateIntervalMs = InputsUpdateIntervalMs,
+        ThrottleColor = InputsThrottleColor,
+        BrakeColor = InputsBrakeColor,
+        ClutchColor = InputsClutchColor,
+        ShowClutch = InputsShowClutch,
+    });
 
-        double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedConfigWidgetId, out var existing))
-        {
-            left = existing.OverlayLeft;
-            top = existing.OverlayTop;
-        }
-
-        var config = new StandingsConfig
-        {
-            UpdateIntervalMs = StandingsUpdateIntervalMs,
-            ShowClassColor = StandingsShowClassColor,
-            ShowCarNumber = StandingsShowCarNumber,
-            ShowPositionsGained = StandingsShowPositionsGained,
-            ShowLicense = StandingsShowLicense,
-            ShowIRating = StandingsShowIRating,
-            ShowCarBrand = StandingsShowCarBrand,
-            ShowInterval = StandingsShowInterval,
-            ShowGap = StandingsShowGap,
-            ShowLastLapTime = StandingsShowLastLapTime,
-            ShowDelta = StandingsShowDelta,
-            ShowPitStatus = StandingsShowPitStatus,
-            MaxDrivers = StandingsMaxDrivers,
-            OverlayLeft = left,
-            OverlayTop = top
-        };
-
-        _savedConfigs[SelectedConfigWidgetId] = config;
-
-        foreach (var kv in _activeWidgets)
-        {
-            if (kv.Key.StartsWith(SelectedConfigWidgetId))
-            {
-                kv.Value.UpdateConfiguration(config);
-            }
-        }
-
-        foreach (var kv in _activeHostPanels)
-        {
-            if (kv.Key.StartsWith(SelectedConfigWidgetId))
-            {
-                kv.Value.ApplyStandingsConfig(config);
-            }
-        }
-    }
-
-    private void PushLapTimerConfigToActiveWidgets()
+    private void PushInputTraceConfigToActiveWidgets() => PushConfigToActiveWidgets("input-trace", new InputTraceConfig
     {
-        if (SelectedConfigWidgetId != "lap-timer") return;
+        UpdateIntervalMs = InputTraceUpdateIntervalMs,
+        ThrottleColor = InputTraceThrottleColor,
+        BrakeColor = InputTraceBrakeColor,
+        HistorySeconds = InputTraceHistorySeconds,
+    });
 
-        double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedConfigWidgetId, out var existing))
-        {
-            left = existing.OverlayLeft;
-            top = existing.OverlayTop;
-        }
-
-        var config = new LapTimerConfig
-        {
-            UpdateIntervalMs = LapTimerUpdateIntervalMs,
-            ShowDeltaToBest = LapTimerShowDeltaToBest,
-            ShowLastLap = LapTimerShowLastLap,
-            ShowBestLap = LapTimerShowBestLap,
-            ShowDeltaLastBest = LapTimerShowDeltaLastBest,
-            OverlayLeft = left,
-            OverlayTop = top
-        };
-
-        _savedConfigs[SelectedConfigWidgetId] = config;
-
-        foreach (var kv in _activeWidgets)
-        {
-            if (kv.Key.StartsWith(SelectedConfigWidgetId))
-            {
-                kv.Value.UpdateConfiguration(config);
-            }
-        }
-
-        foreach (var kv in _activeHostPanels)
-        {
-            if (kv.Key.StartsWith(SelectedConfigWidgetId))
-            {
-                kv.Value.ApplyLapTimerConfig(config);
-            }
-        }
-    }
-
-    private void PushTrackMapConfigToActiveWidgets()
+    private void PushStandingsConfigToActiveWidgets() => PushConfigToActiveWidgets("standings", new StandingsConfig
     {
-        if (SelectedConfigWidgetId != "track-map") return;
+        UpdateIntervalMs = StandingsUpdateIntervalMs,
+        ShowClassColor = StandingsShowClassColor,
+        ShowCarNumber = StandingsShowCarNumber,
+        ShowPositionsGained = StandingsShowPositionsGained,
+        ShowLicense = StandingsShowLicense,
+        ShowIRating = StandingsShowIRating,
+        ShowCarBrand = StandingsShowCarBrand,
+        ShowInterval = StandingsShowInterval,
+        ShowGap = StandingsShowGap,
+        ShowLastLapTime = StandingsShowLastLapTime,
+        ShowDelta = StandingsShowDelta,
+        ShowPitStatus = StandingsShowPitStatus,
+        MaxDrivers = StandingsMaxDrivers,
+    });
 
-        double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedConfigWidgetId, out var existing))
-        {
-            left = existing.OverlayLeft;
-            top = existing.OverlayTop;
-        }
-
-        var config = new TrackMapConfig
-        {
-            UpdateIntervalMs = TrackMapUpdateIntervalMs,
-            ShowDriverNames = TrackMapShowDriverNames,
-            ShowPitStatus = TrackMapShowPitStatus,
-            OverlayLeft = left,
-            OverlayTop = top
-        };
-
-        _savedConfigs[SelectedConfigWidgetId] = config;
-
-        foreach (var kv in _activeWidgets)
-        {
-            if (kv.Key.StartsWith(SelectedConfigWidgetId))
-            {
-                kv.Value.UpdateConfiguration(config);
-            }
-        }
-
-        foreach (var kv in _activeHostPanels)
-        {
-            if (kv.Key.StartsWith(SelectedConfigWidgetId))
-            {
-                kv.Value.ApplyTrackMapConfig(config);
-            }
-        }
-    }
-
-    private void PushWeatherConfigToActiveWidgets()
+    private void PushLapTimerConfigToActiveWidgets() => PushConfigToActiveWidgets("lap-timer", new LapTimerConfig
     {
-        if (SelectedConfigWidgetId != "weather") return;
+        UpdateIntervalMs = LapTimerUpdateIntervalMs,
+        ShowDeltaToBest = LapTimerShowDeltaToBest,
+        ShowLastLap = LapTimerShowLastLap,
+        ShowBestLap = LapTimerShowBestLap,
+        ShowDeltaLastBest = LapTimerShowDeltaLastBest,
+    });
 
-        double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedConfigWidgetId, out var existing))
-        {
-            left = existing.OverlayLeft;
-            top = existing.OverlayTop;
-        }
-
-        var config = new WeatherConfig
-        {
-            UpdateIntervalMs = WeatherUpdateIntervalMs,
-            ShowWind = WeatherShowWind,
-            ShowForecast = WeatherShowForecast,
-            OverlayLeft = left,
-            OverlayTop = top
-        };
-
-        _savedConfigs[SelectedConfigWidgetId] = config;
-
-        foreach (var kv in _activeWidgets)
-        {
-            if (kv.Key.StartsWith(SelectedConfigWidgetId))
-            {
-                kv.Value.UpdateConfiguration(config);
-            }
-        }
-
-        foreach (var kv in _activeHostPanels)
-        {
-            if (kv.Key.StartsWith(SelectedConfigWidgetId))
-            {
-                kv.Value.ApplyWeatherConfig(config);
-            }
-        }
-    }
-
-    private void PushFuelConfigToActiveWidgets()
+    private void PushTrackMapConfigToActiveWidgets() => PushConfigToActiveWidgets("track-map", new TrackMapConfig
     {
-        if (SelectedConfigWidgetId != "fuel-calculator") return;
+        UpdateIntervalMs = TrackMapUpdateIntervalMs,
+        ShowDriverNames = TrackMapShowDriverNames,
+        ShowPitStatus = TrackMapShowPitStatus,
+    });
 
-        double left = double.NaN, top = double.NaN;
-        if (_savedConfigs.TryGetValue(SelectedConfigWidgetId, out var existing))
-        {
-            left = existing.OverlayLeft;
-            top = existing.OverlayTop;
-        }
-
-        var config = new FuelCalculatorConfig
-        {
-            FuelTankCapacity = FuelTankCapacity,
-            OverlayLeft = left,
-            OverlayTop = top
-        };
-
-        _savedConfigs[SelectedConfigWidgetId] = config;
-
-        foreach (var kv in _activeWidgets)
-        {
-            if (kv.Key.StartsWith(SelectedConfigWidgetId))
-            {
-                kv.Value.UpdateConfiguration(config);
-            }
-        }
-
-        foreach (var kv in _activeHostPanels)
-        {
-            if (kv.Key.StartsWith(SelectedConfigWidgetId))
-            {
-                kv.Value.ApplyFuelConfig(config);
-            }
-        }
-    }
+    private void PushWeatherConfigToActiveWidgets() => PushConfigToActiveWidgets("weather", new WeatherConfig
+    {
+        UpdateIntervalMs = WeatherUpdateIntervalMs,
+        ShowWind = WeatherShowWind,
+        ShowForecast = WeatherShowForecast,
+    });
 
     public void SaveWidgetPosition(string? widgetId, double left, double top)
     {
@@ -948,7 +660,8 @@ public partial class MainWindowViewModel : ObservableObject
         {
             Widget = widget,
             InstanceId = instanceId,
-            ViewModel = this
+            ViewModel = this,
+            FactoryRegistry = _factoryRegistry
         };
 
         // Set AutomationProperties.Name for E2E test discovery

@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using RaceOverlay.App.ViewModels;
 using RaceOverlay.Core.Providers;
 using RaceOverlay.Core.Services;
+using RaceOverlay.Engine.Factories;
 using RaceOverlay.Engine.Widgets;
 using RaceOverlay.Engine.Views;
 using RaceOverlay.Engine.ViewModels;
@@ -334,6 +335,17 @@ public partial class App : Application
         services.AddTransient<WeatherWidget>();
         services.AddTransient<WeatherViewModel>();
         services.AddTransient<WeatherView>();
+
+        // Widget view factories
+        services.AddSingleton<IWidgetViewFactory, RelativeOverlayViewFactory>();
+        services.AddSingleton<IWidgetViewFactory, FuelCalculatorViewFactory>();
+        services.AddSingleton<IWidgetViewFactory, InputsViewFactory>();
+        services.AddSingleton<IWidgetViewFactory, InputTraceViewFactory>();
+        services.AddSingleton<IWidgetViewFactory, StandingsViewFactory>();
+        services.AddSingleton<IWidgetViewFactory, LapTimerViewFactory>();
+        services.AddSingleton<IWidgetViewFactory, TrackMapViewFactory>();
+        services.AddSingleton<IWidgetViewFactory, WeatherViewFactory>();
+        services.AddSingleton<WidgetViewFactoryRegistry>();
 
         // ViewModels
         services.AddTransient<MainWindowViewModel>();
