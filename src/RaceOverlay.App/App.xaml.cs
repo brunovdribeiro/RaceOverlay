@@ -50,9 +50,14 @@ public partial class App : Application
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "RaceOverlay", "logs", "raceoverlay-.log");
 
-        Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Information()
-            .WriteTo.Console()
+        var loggerConfig = new LoggerConfiguration()
+            .MinimumLevel.Information();
+
+#if DEBUG
+        loggerConfig = loggerConfig.WriteTo.Console();
+#endif
+
+        Log.Logger = loggerConfig
             .WriteTo.File(logPath,
                 rollingInterval: RollingInterval.Day,
                 retainedFileCountLimit: 7,
