@@ -24,6 +24,11 @@ public partial class TrackMapViewModel : ObservableObject
 
     public event Action? MapUpdated;
 
+    public void NotifyOutlineChanged()
+    {
+        MapUpdated?.Invoke();
+    }
+
     public void ApplyConfiguration(ITrackMapConfig config)
     {
         ShowDriverNames = config.ShowDriverNames;

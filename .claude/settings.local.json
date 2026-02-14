@@ -19,7 +19,12 @@
       "Bash(taskkill:*)",
       "Bash(git mv:*)",
       "Bash(ls:*)",
-      "WebFetch(domain:docs.velopack.io)"
+      "WebFetch(domain:docs.velopack.io)",
+      "Bash(dotnet list:*)",
+      "Bash(dir \"C:\\\\Sources\\\\RaceOverlay$APPDATA\\\\RaceOverlay\")",
+      "Bash(dotnet nuget list:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)"
     ]
   }
 }

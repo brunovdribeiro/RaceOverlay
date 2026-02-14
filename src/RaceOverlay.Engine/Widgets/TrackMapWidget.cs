@@ -1,6 +1,7 @@
 using RaceOverlay.Core.Services;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Engine.Models;
+using RaceOverlay.Engine.Services;
 
 namespace RaceOverlay.Engine.Widgets;
 
@@ -23,8 +24,11 @@ public class TrackMapWidget : IWidget
     private readonly Random _random = new();
     private readonly double[] _driverSpeeds = new double[12];
     private readonly ILiveTelemetryService? _telemetryService;
+    private readonly TrackOutlineProvider _outlineProvider = new();
+    private bool _outlineInitialized;
 
     public event Action? DataUpdated;
+    public event Action? OutlineChanged;
 
     public string WidgetId => "track-map";
     public string DisplayName => "Track Map";
@@ -37,28 +41,15 @@ public class TrackMapWidget : IWidget
     private bool UseLiveData => !_configuration.UseMockData
                                 && _telemetryService?.IsConnected == true;
 
-    // Normalized track outline (0-1 range), roughly a D-shaped circuit
-    public static readonly (double X, double Y)[] TrackOutline = new[]
-    {
-        (0.30, 0.05), (0.35, 0.04), (0.40, 0.03), (0.45, 0.03),
-        (0.50, 0.03), (0.55, 0.03), (0.60, 0.04), (0.65, 0.05),
-        (0.70, 0.07), (0.75, 0.10), (0.79, 0.14), (0.82, 0.18),
-        (0.85, 0.23), (0.87, 0.28), (0.88, 0.33), (0.89, 0.38),
-        (0.89, 0.43), (0.89, 0.48), (0.88, 0.53), (0.87, 0.58),
-        (0.85, 0.63), (0.82, 0.68), (0.79, 0.72), (0.75, 0.76),
-        (0.70, 0.80), (0.65, 0.83), (0.60, 0.85), (0.55, 0.87),
-        (0.50, 0.88), (0.45, 0.88), (0.40, 0.87), (0.35, 0.85),
-        (0.30, 0.83), (0.25, 0.80), (0.21, 0.76), (0.18, 0.72),
-        (0.15, 0.68), (0.13, 0.63), (0.12, 0.58), (0.11, 0.53),
-        (0.11, 0.48), (0.11, 0.43), (0.12, 0.38), (0.13, 0.33),
-        (0.15, 0.28), (0.18, 0.23), (0.21, 0.18), (0.25, 0.14),
-        (0.30, 0.10), (0.30, 0.05),
-    };
-
     public TrackMapWidget(ILiveTelemetryService? telemetryService = null)
     {
         _configuration = new TrackMapConfig();
         _telemetryService = telemetryService;
+
+        _outlineProvider.OutlineReady += () =>
+        {
+            OutlineChanged?.Invoke();
+        };
     }
 
     public void UpdateConfiguration(IWidgetConfiguration configuration)
@@ -72,6 +63,7 @@ public class TrackMapWidget : IWidget
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _outlineInitialized = false;
 
         if (!UseLiveData)
         {
@@ -99,6 +91,8 @@ public class TrackMapWidget : IWidget
 
         _cancellationTokenSource?.Dispose();
         _drivers.Clear();
+        _outlineProvider.Reset();
+        _outlineInitialized = false;
     }
 
     private void InitializeMockData()
@@ -188,6 +182,25 @@ public class TrackMapWidget : IWidget
         CurrentLap = ts.GetInt("Lap");
         TotalLaps = ts.SessionLaps;
 
+        // Initialize outline provider on first live update (when session info is available)
+        if (!_outlineInitialized && ts.TrackId > 0)
+        {
+            _outlineProvider.Initialize(ts);
+            _outlineInitialized = true;
+            OutlineChanged?.Invoke();
+        }
+
+        // Record track outline samples if provider is recording
+        if (_outlineProvider.IsRecording)
+        {
+            float speed = ts.GetFloat("Speed");
+            float yaw = ts.GetFloat("YawNorth");
+            float lapDistPct = ts.GetFloat("CarIdxLapDistPct", playerCarIdx);
+            double dt = _configuration.UpdateIntervalMs / 1000.0;
+
+            _outlineProvider.RecordSample(speed, yaw, lapDistPct, dt);
+        }
+
         // Gather active drivers
         var liveDrivers = new List<(int carIdx, float lapDistPct, DriverSessionInfo info)>();
 
@@ -229,5 +242,5 @@ public class TrackMapWidget : IWidget
         return (_drivers.AsReadOnly(), CurrentLap, TotalLaps);
     }
 
-    public (double X, double Y)[] GetTrackOutline() => TrackOutline;
+    public (double X, double Y)[] GetTrackOutline() => _outlineProvider.CurrentOutline;
 }

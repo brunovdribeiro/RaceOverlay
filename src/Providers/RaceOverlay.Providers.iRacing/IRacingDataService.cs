@@ -126,6 +126,36 @@ public class IRacingDataService : ILiveTelemetryService
         }
     }
 
+    public int TrackId
+    {
+        get
+        {
+            try
+            {
+                return _sdk.Data.SessionInfo?.WeekendInfo?.TrackID ?? 0;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+    }
+
+    public string? TrackConfigName
+    {
+        get
+        {
+            try
+            {
+                return _sdk.Data.SessionInfo?.WeekendInfo?.TrackConfigName;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
     public float TrackLengthKm
     {
         get

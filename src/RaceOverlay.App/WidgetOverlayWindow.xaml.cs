@@ -202,6 +202,7 @@ public partial class WidgetOverlayWindow : Window
             WidgetContent.Content = view;
 
             trackMapWidget.DataUpdated += OnTrackMapDataUpdated;
+            trackMapWidget.OutlineChanged += OnTrackOutlineChanged;
         }
         else if (Widget is WeatherWidget weatherWidget)
         {
@@ -342,6 +343,19 @@ public partial class WidgetOverlayWindow : Window
         Dispatcher.Invoke(() => vm.UpdateMap(data.Drivers, data.CurrentLap, data.TotalLaps));
     }
 
+    private void OnTrackOutlineChanged()
+    {
+        if (_trackMapWidget == null || _trackMapViewModel == null) return;
+
+        var widget = _trackMapWidget;
+        var vm = _trackMapViewModel;
+        Dispatcher.Invoke(() =>
+        {
+            vm.TrackOutline = widget.GetTrackOutline();
+            vm.NotifyOutlineChanged();
+        });
+    }
+
     private void OnWeatherDataUpdated()
     {
 
@@ -422,7 +436,11 @@ public partial class WidgetOverlayWindow : Window
         if (_inputTraceWidget != null) _inputTraceWidget.DataUpdated += OnInputTraceDataUpdated;
         if (_standingsWidget != null) _standingsWidget.DataUpdated += OnStandingsDataUpdated;
         if (_lapTimerWidget != null) _lapTimerWidget.DataUpdated += OnLapTimerDataUpdated;
-        if (_trackMapWidget != null) _trackMapWidget.DataUpdated += OnTrackMapDataUpdated;
+        if (_trackMapWidget != null)
+        {
+            _trackMapWidget.DataUpdated += OnTrackMapDataUpdated;
+            _trackMapWidget.OutlineChanged += OnTrackOutlineChanged;
+        }
         if (_weatherWidget != null) _weatherWidget.DataUpdated += OnWeatherDataUpdated;
     }
 
@@ -434,7 +452,11 @@ public partial class WidgetOverlayWindow : Window
         if (_inputTraceWidget != null) _inputTraceWidget.DataUpdated -= OnInputTraceDataUpdated;
         if (_standingsWidget != null) _standingsWidget.DataUpdated -= OnStandingsDataUpdated;
         if (_lapTimerWidget != null) _lapTimerWidget.DataUpdated -= OnLapTimerDataUpdated;
-        if (_trackMapWidget != null) _trackMapWidget.DataUpdated -= OnTrackMapDataUpdated;
+        if (_trackMapWidget != null)
+        {
+            _trackMapWidget.DataUpdated -= OnTrackMapDataUpdated;
+            _trackMapWidget.OutlineChanged -= OnTrackOutlineChanged;
+        }
         if (_weatherWidget != null) _weatherWidget.DataUpdated -= OnWeatherDataUpdated;
     }
 

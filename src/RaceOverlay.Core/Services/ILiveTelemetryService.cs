@@ -24,6 +24,8 @@ public interface ILiveTelemetryService
     int PlayerCarIdx { get; }
     DriverSessionInfo? GetDriverInfo(int carIdx);
     string? TrackName { get; }
+    int TrackId { get; }
+    string? TrackConfigName { get; }
     float TrackLengthKm { get; }
     int SessionLaps { get; }
 
