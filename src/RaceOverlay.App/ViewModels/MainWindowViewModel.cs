@@ -34,7 +34,8 @@ public partial class MainWindowViewModel : ObservableObject
         ["standings"] = "Icon.Podium",
         ["lap-timer"] = "Icon.Stopwatch",
         ["track-map"] = "Icon.MapPin",
-        ["weather"] = "Icon.Cloud"
+        ["weather"] = "Icon.Cloud",
+        ["radar"] = "Icon.Radar"
     };
 
     [ObservableProperty]
@@ -199,6 +200,22 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private int inputTraceHistorySeconds = 10;
 
+    // Radar settings
+    [ObservableProperty]
+    private double radarRangeMeters = 40.0;
+
+    [ObservableProperty]
+    private int radarUpdateIntervalMs = 33;
+
+    [ObservableProperty]
+    private string radarPlayerColor = "#3B82F6";
+
+    [ObservableProperty]
+    private string radarOpponentColor = "#EF4444";
+
+    [ObservableProperty]
+    private bool radarUseMockData = false;
+
     public string SetupModeButtonText => IsSetupMode ? "Exit Setup Mode (Ctrl+F1)" : "Enter Setup Mode (Ctrl+F1)";
 
     public MainWindowViewModel(IWidgetRegistry widgetRegistry, IServiceProvider serviceProvider, ILogger<MainWindowViewModel> logger, WidgetViewFactoryRegistry factoryRegistry)
@@ -245,6 +262,7 @@ public partial class MainWindowViewModel : ObservableObject
         ["lap-timer"] = (c => c is ILapTimerConfig, () => new LapTimerConfig()),
         ["track-map"] = (c => c is ITrackMapConfig, () => new TrackMapConfig()),
         ["weather"] = (c => c is IWeatherConfig, () => new WeatherConfig()),
+        ["radar"] = (c => c is IRadarConfig, () => new RadarConfig()),
     };
 
     private void LoadConfigForWidget(string widgetId)
@@ -280,6 +298,7 @@ public partial class MainWindowViewModel : ObservableObject
             case "lap-timer": LoadConfigFromLapTimerWidget((ILapTimerConfig)config); break;
             case "track-map": LoadConfigFromTrackMapWidget((ITrackMapConfig)config); break;
             case "weather": LoadConfigFromWeatherWidget((IWeatherConfig)config); break;
+            case "radar": LoadConfigFromRadarWidget((IRadarConfig)config); break;
         }
     }
 
@@ -367,6 +386,16 @@ public partial class MainWindowViewModel : ObservableObject
         UpdatePositionText(config.OverlayLeft, config.OverlayTop);
     }
 
+    private void LoadConfigFromRadarWidget(IRadarConfig config)
+    {
+        RadarRangeMeters = config.RangeMeters;
+        RadarUpdateIntervalMs = config.UpdateIntervalMs;
+        RadarPlayerColor = config.PlayerColor;
+        RadarOpponentColor = config.OpponentColor;
+        RadarUseMockData = config.UseMockData;
+        UpdatePositionText(config.OverlayLeft, config.OverlayTop);
+    }
+
     // Push config changes to active widget instances when toggles change
     partial void OnShowPositionChanged(bool value) => PushRelativeConfigToActiveWidgets();
     partial void OnShowClassColorChanged(bool value) => PushRelativeConfigToActiveWidgets();
@@ -419,6 +448,12 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnWeatherUpdateIntervalMsChanged(int value) => PushWeatherConfigToActiveWidgets();
     partial void OnWeatherShowWindChanged(bool value) => PushWeatherConfigToActiveWidgets();
     partial void OnWeatherShowForecastChanged(bool value) => PushWeatherConfigToActiveWidgets();
+
+    partial void OnRadarRangeMetersChanged(double value) => PushRadarConfigToActiveWidgets();
+    partial void OnRadarUpdateIntervalMsChanged(int value) => PushRadarConfigToActiveWidgets();
+    partial void OnRadarPlayerColorChanged(string value) => PushRadarConfigToActiveWidgets();
+    partial void OnRadarOpponentColorChanged(string value) => PushRadarConfigToActiveWidgets();
+    partial void OnRadarUseMockDataChanged(bool value) => PushRadarConfigToActiveWidgets();
 
     private void PushConfigToActiveWidgets(string widgetId, IWidgetConfiguration config)
     {
@@ -520,6 +555,15 @@ public partial class MainWindowViewModel : ObservableObject
         UpdateIntervalMs = WeatherUpdateIntervalMs,
         ShowWind = WeatherShowWind,
         ShowForecast = WeatherShowForecast,
+    });
+
+    private void PushRadarConfigToActiveWidgets() => PushConfigToActiveWidgets("radar", new RadarConfig
+    {
+        RangeMeters = RadarRangeMeters,
+        UpdateIntervalMs = RadarUpdateIntervalMs,
+        PlayerColor = RadarPlayerColor,
+        OpponentColor = RadarOpponentColor,
+        UseMockData = RadarUseMockData,
     });
 
     public void SaveWidgetPosition(string? widgetId, double left, double top)

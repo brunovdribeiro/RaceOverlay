@@ -293,6 +293,18 @@ public partial class App : Application
                 Author = "RaceOverlay Team"
             });
 
+            // Register Radar Widget
+            registry.RegisterWidget(new WidgetMetadata
+            {
+                WidgetId = "radar",
+                DisplayName = "Radar",
+                Description = "Top-down proximity radar showing cars around you as rectangles.",
+                WidgetType = typeof(RadarWidget),
+                ConfigurationType = typeof(RadarConfig),
+                Version = "1.0.0",
+                Author = "RaceOverlay Team"
+            });
+
             return registry;
         });
 
@@ -336,6 +348,11 @@ public partial class App : Application
         services.AddTransient<WeatherViewModel>();
         services.AddTransient<WeatherView>();
 
+        // Radar Widget
+        services.AddTransient<RadarWidget>();
+        services.AddTransient<RadarViewModel>();
+        services.AddTransient<RadarView>();
+
         // Widget view factories
         services.AddSingleton<IWidgetViewFactory, RelativeOverlayViewFactory>();
         services.AddSingleton<IWidgetViewFactory, FuelCalculatorViewFactory>();
@@ -345,6 +362,7 @@ public partial class App : Application
         services.AddSingleton<IWidgetViewFactory, LapTimerViewFactory>();
         services.AddSingleton<IWidgetViewFactory, TrackMapViewFactory>();
         services.AddSingleton<IWidgetViewFactory, WeatherViewFactory>();
+        services.AddSingleton<IWidgetViewFactory, RadarViewFactory>();
         services.AddSingleton<WidgetViewFactoryRegistry>();
 
         // ViewModels
