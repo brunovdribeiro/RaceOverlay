@@ -1,5 +1,6 @@
 using RaceOverlay.Core.Services;
 using rF2SharedMemoryNet;
+using rF2SharedMemoryNet.RF2Data.Enums;
 using rF2SharedMemoryNet.RF2Data.Structs;
 using System.Diagnostics;
 using System.Text;
@@ -57,12 +58,20 @@ public class rFactor2DataService : ILiveTelemetryService, IDisposable
     private async Task UpdateLoopAsync(CancellationToken cancellationToken)
     {
         var wasConnected = false;
+        var processCheckInterval = 0; // Counter to throttle process checks
+        var isGameRunning = true;     // Optimistic: assume running (we were told to start)
 
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-                var isGameRunning = IsGameProcessRunning();
+                // Only check process every ~2 seconds (100 ticks × 20ms) instead of every tick
+                if (processCheckInterval <= 0)
+                {
+                    isGameRunning = IsGameProcessRunning();
+                    processCheckInterval = 100;
+                }
+                processCheckInterval--;
 
                 if (isGameRunning)
                 {
@@ -119,13 +128,13 @@ public class rFactor2DataService : ILiveTelemetryService, IDisposable
         }
     }
 
-    private static bool IsGameProcessRunning()
+    internal static bool IsGameProcessRunning()
     {
         // Check for both rFactor 2 and Le Mans Ultimate
         var processes = Process.GetProcessesByName("rFactor2");
         if (processes.Length > 0) return true;
 
-        processes = Process.GetProcessesByName("LMU");
+        processes = Process.GetProcessesByName("Le Mans Ultimate");
         return processes.Length > 0;
     }
 
@@ -425,7 +434,7 @@ public class rFactor2DataService : ILiveTelemetryService, IDisposable
 
         foreach (var vehicle in _latestScoring.Value.Vehicles)
         {
-            if (vehicle.IsPlayer == 1)
+            if (vehicle.IsPlayer == 1 || (ControlEntity)vehicle.Control == ControlEntity.Player)
                 return vehicle;
         }
 
@@ -436,8 +445,19 @@ public class rFactor2DataService : ILiveTelemetryService, IDisposable
     {
         if (_latestTelemetry == null || _latestTelemetry.Value.Vehicles.Length == 0) return null;
 
-        // The first vehicle in telemetry is always the player
-        return _latestTelemetry.Value.Vehicles[0];
+        // Find the player vehicle in scoring first, then match by ID in telemetry
+        var playerScoring = GetPlayerVehicleScoring();
+        if (playerScoring == null)
+            return _latestTelemetry.Value.Vehicles[0]; // fallback
+
+        int playerId = playerScoring.Value.ID;
+        foreach (var vehicle in _latestTelemetry.Value.Vehicles)
+        {
+            if (vehicle.ID == playerId)
+                return vehicle;
+        }
+
+        return _latestTelemetry.Value.Vehicles[0]; // fallback
     }
 
     private static float CalculateSpeed(Vec3 localVelocity)

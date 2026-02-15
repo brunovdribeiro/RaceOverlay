@@ -21,6 +21,11 @@ public interface IGameDetectionService
     bool IsDemoMode { get; }
 
     /// <summary>
+    /// The currently active telemetry service (live game or demo)
+    /// </summary>
+    ILiveTelemetryService ActiveTelemetryService { get; }
+
+    /// <summary>
     /// Event fired when a game is detected and connected
     /// </summary>
     event EventHandler<string>? GameDetected;

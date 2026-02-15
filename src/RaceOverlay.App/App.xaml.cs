@@ -211,11 +211,11 @@ public partial class App : Application
             return detectionService;
         });
 
-        // Provide ILiveTelemetryService - delegates to the active game's service (or demo mode)
+        // Provide ILiveTelemetryService - proxy that dynamically delegates to the current active service
         services.AddSingleton<ILiveTelemetryService>(sp =>
         {
-            var detectionService = (GameDetectionService)sp.GetRequiredService<IGameDetectionService>();
-            return detectionService.ActiveTelemetryService;
+            var detectionService = sp.GetRequiredService<IGameDetectionService>();
+            return new TelemetryServiceProxy(() => detectionService.ActiveTelemetryService);
         });
 
         // Widget system

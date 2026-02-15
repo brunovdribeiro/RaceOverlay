@@ -19,7 +19,7 @@ public class rFactor2Provider : IGameProvider
         _dataService.TelemetryUpdated += OnTelemetryTick;
     }
 
-    public bool IsGameRunning() => _dataService.IsConnected;
+    public bool IsGameRunning() => _dataService.IsConnected || rFactor2DataService.IsGameProcessRunning();
 
     public Task StartAsync(CancellationToken cancellationToken = default)
     {

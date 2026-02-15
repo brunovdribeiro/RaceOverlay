@@ -50,7 +50,7 @@ public partial class WidgetHostPanel : UserControl
         view.DataContext = _viewModel;
         WidgetContent.Content = view;
 
-        _unsubscribe = _factory.Subscribe(_viewModel, Widget, action => Dispatcher.Invoke(action));
+        _unsubscribe = _factory.Subscribe(_viewModel, Widget, action => Dispatcher.BeginInvoke(action));
 
         // Register this panel for drag management
         WidgetDragService.Instance.RegisterPanel(this);
@@ -97,7 +97,7 @@ public partial class WidgetHostPanel : UserControl
             if (_factory != null && _viewModel != null)
             {
                 _factory.RefreshData(_viewModel, Widget);
-                _unsubscribe = _factory.Subscribe(_viewModel, Widget, action => Dispatcher.Invoke(action));
+                _unsubscribe = _factory.Subscribe(_viewModel, Widget, action => Dispatcher.BeginInvoke(action));
             }
         }
     }
