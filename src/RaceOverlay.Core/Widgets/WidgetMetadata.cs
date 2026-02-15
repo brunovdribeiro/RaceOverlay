@@ -42,6 +42,22 @@ public class WidgetMetadata
     public string? Author { get; init; }
 
     /// <summary>
+    /// Game IDs this widget supports. Empty means all games.
+    /// </summary>
+    public string[] SupportedGames { get; init; } = [];
+
+    /// <summary>
+    /// Returns true if the widget supports the given game, or if no game restrictions are set.
+    /// Null/empty gameId (demo mode) always returns true.
+    /// </summary>
+    public bool SupportsGame(string? gameId)
+    {
+        if (string.IsNullOrEmpty(gameId) || SupportedGames.Length == 0)
+            return true;
+        return Array.Exists(SupportedGames, g => g.Equals(gameId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
     /// Gets a string representation of the widget metadata.
     /// </summary>
     public override string ToString() => $"{DisplayName} ({WidgetId}) v{Version}";

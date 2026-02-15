@@ -1,6 +1,5 @@
 using RaceOverlay.Core.Services;
 using rF2SharedMemoryNet;
-using rF2SharedMemoryNet.RF2Data.Enums;
 using rF2SharedMemoryNet.RF2Data.Structs;
 using System.Diagnostics;
 using System.Text;
@@ -16,6 +15,9 @@ public class rFactor2DataService : ILiveTelemetryService, IDisposable
     private Telemetry? _latestTelemetry;
     private Scoring? _latestScoring;
     private readonly object _dataLock = new();
+
+    // Cached track length (meters) derived from ScoringInfo.LapDist
+    private double _trackLengthMeters;
 
     public bool IsConnected => _isConnected;
 
@@ -74,6 +76,11 @@ public class rFactor2DataService : ILiveTelemetryService, IDisposable
                         {
                             _latestTelemetry = telemetry;
                             _latestScoring = scoring;
+
+                            // Cache track length from ScoringInfo.LapDist (full lap distance in meters)
+                            double lapDist = scoring.Value.ScoringInfo.LapDist;
+                            if (lapDist > 0)
+                                _trackLengthMeters = lapDist;
                         }
 
                         if (!wasConnected)
@@ -122,24 +129,52 @@ public class rFactor2DataService : ILiveTelemetryService, IDisposable
         return processes.Length > 0;
     }
 
-    // Telemetry access methods
+    // Scalar telemetry (player car)
     public float GetFloat(string variableName)
     {
         lock (_dataLock)
         {
             var playerTel = GetPlayerVehicleTelemetry();
-            if (playerTel == null) return 0f;
+            var playerScore = GetPlayerVehicleScoring();
 
             return variableName switch
             {
-                "Speed" => CalculateSpeed(playerTel.Value.LocalVelocity),
-                "RPM" => (float)playerTel.Value.EngineRPM,
-                "Throttle" => (float)playerTel.Value.UnfilteredThrottle,
-                "Brake" => (float)playerTel.Value.UnfilteredBrake,
-                "Clutch" => (float)playerTel.Value.UnfilteredClutch,
-                "Steering" => (float)playerTel.Value.UnfilteredSteering,
-                "Fuel" => (float)playerTel.Value.Fuel,
-                "FuelCapacity" => (float)playerTel.Value.FuelCapacity,
+                "Speed" => playerTel != null ? CalculateSpeed(playerTel.Value.LocalVelocity) : 0f,
+                "RPM" => (float)(playerTel?.EngineRPM ?? 0),
+                "Throttle" => (float)(playerTel?.UnfilteredThrottle ?? 0),
+                "Brake" => (float)(playerTel?.UnfilteredBrake ?? 0),
+                "Clutch" => (float)(playerTel?.UnfilteredClutch ?? 0),
+                "Steering" => (float)(playerTel?.UnfilteredSteering ?? 0),
+                "Fuel" => (float)(playerTel?.Fuel ?? 0),
+                "FuelCapacity" => (float)(playerTel?.FuelCapacity ?? 0),
+
+                // Fuel variables used by FuelCalculator widget
+                "FuelLevel" => (float)(playerTel?.Fuel ?? 0),
+                "FuelLevelPct" => playerTel != null && playerTel.Value.FuelCapacity > 0
+                    ? (float)(playerTel.Value.Fuel / playerTel.Value.FuelCapacity)
+                    : 0f,
+
+                // Steering angle in radians (used by Inputs widget)
+                "SteeringWheelAngle" => playerTel != null
+                    ? (float)(playerTel.Value.UnfilteredSteering * playerTel.Value.PhysicalSteeringWheelRange * Math.PI / 360.0)
+                    : 0f,
+
+                // Lap timing (used by LapTimer widget)
+                "LapCurrentLapTime" => (float)(playerScore?.TimeIntoLap ?? 0),
+                "LapLastLapTime" => (float)(playerScore?.LastLapTime ?? 0),
+                "LapBestLapTime" => (float)(playerScore?.BestLapTime ?? 0),
+                "LapDeltaToBestLap" => CalculateDeltaToBest(playerScore),
+
+                // Weather (used by Weather widget)
+                "TrackTempCrew" => (float)(_latestScoring?.ScoringInfo.TrackTemp ?? 0),
+                "AirTemp" => (float)(_latestScoring?.ScoringInfo.AmbientTemp ?? 0),
+                "WindVel" => _latestScoring != null ? CalculateWindSpeed(_latestScoring.Value.ScoringInfo.Wind) : 0f,
+                "WindDir" => _latestScoring != null ? CalculateWindDirection(_latestScoring.Value.ScoringInfo.Wind) : 0f,
+                "RelativeHumidity" => 0f, // Not available in rF2 shared memory
+
+                // Track map: Yaw relative to north (from orientation matrix)
+                "YawNorth" => playerTel != null ? CalculateYawNorth(playerTel.Value.Orientation) : 0f,
+
                 _ => 0f
             };
         }
@@ -159,6 +194,14 @@ public class rFactor2DataService : ILiveTelemetryService, IDisposable
                 "Gear" => playerTel?.Gear ?? 0,
                 "Lap" => playerScore?.TotalLaps ?? 0,
                 "Position" => playerScore?.Place ?? 0,
+
+                // Weather enums (used by Weather widget)
+                "Skies" => EstimateSkies(),
+                "Precipitation" => EstimatePrecipitation(),
+
+                // CarLeftRight not available in rF2 — return 0 (none)
+                "CarLeftRight" => 0,
+
                 _ => 0
             };
         }
@@ -174,6 +217,7 @@ public class rFactor2DataService : ILiveTelemetryService, IDisposable
             return variableName switch
             {
                 "InPits" => playerScore.Value.InPits == 1,
+                "OnPitRoad" => playerScore.Value.InPits == 1,
                 _ => false
             };
         }
@@ -184,15 +228,45 @@ public class rFactor2DataService : ILiveTelemetryService, IDisposable
     {
         lock (_dataLock)
         {
+            // Some variables come from scoring, some from telemetry
+            if (variableName is "CarIdxLapDistPct" or "CarIdxEstTime" or "CarIdxF2Time"
+                or "CarIdxBestLapTime" or "CarIdxLastLapTime")
+            {
+                if (_latestScoring == null || carIdx < 0 || carIdx >= _latestScoring.Value.Vehicles.Length)
+                    return 0f;
+
+                var vehicle = _latestScoring.Value.Vehicles[carIdx];
+
+                return variableName switch
+                {
+                    // Lap distance as percentage (0.0-1.0)
+                    "CarIdxLapDistPct" => _trackLengthMeters > 0
+                        ? (float)(vehicle.LapDist / _trackLengthMeters)
+                        : 0f,
+
+                    // Estimated time: use TimeIntoLap as approximation for estimated lap time
+                    "CarIdxEstTime" => (float)vehicle.EstimatedLapTime,
+
+                    // Time behind leader (used for gap calculations in Standings)
+                    "CarIdxF2Time" => (float)vehicle.TimeBehindLeader,
+
+                    "CarIdxBestLapTime" => (float)vehicle.BestLapTime,
+                    "CarIdxLastLapTime" => (float)vehicle.LastLapTime,
+
+                    _ => 0f
+                };
+            }
+
+            // Telemetry-based array variables
             if (_latestTelemetry == null || carIdx < 0 || carIdx >= _latestTelemetry.Value.Vehicles.Length)
                 return 0f;
 
-            var vehicle = _latestTelemetry.Value.Vehicles[carIdx];
+            var telVehicle = _latestTelemetry.Value.Vehicles[carIdx];
 
             return variableName switch
             {
-                "Speed" => CalculateSpeed(vehicle.LocalVelocity),
-                "RPM" => (float)vehicle.EngineRPM,
+                "Speed" => CalculateSpeed(telVehicle.LocalVelocity),
+                "RPM" => (float)telVehicle.EngineRPM,
                 _ => 0f
             };
         }
@@ -210,6 +284,7 @@ public class rFactor2DataService : ILiveTelemetryService, IDisposable
             return variableName switch
             {
                 "Position" => vehicle.Place,
+                "CarIdxPosition" => vehicle.Place,
                 "Lap" => vehicle.TotalLaps,
                 _ => 0
             };
@@ -228,6 +303,7 @@ public class rFactor2DataService : ILiveTelemetryService, IDisposable
             return variableName switch
             {
                 "InPits" => vehicle.InPits == 1,
+                "CarIdxOnPitRoad" => vehicle.InPits == 1,
                 _ => false
             };
         }
@@ -314,7 +390,7 @@ public class rFactor2DataService : ILiveTelemetryService, IDisposable
         }
     }
 
-    public int TrackId => 0; // rF2 doesn't have track IDs
+    public int TrackId => 0; // rF2 doesn't have numeric track IDs
 
     public string? TrackConfigName => null; // Not available in rF2 shared memory
 
@@ -324,13 +400,8 @@ public class rFactor2DataService : ILiveTelemetryService, IDisposable
         {
             lock (_dataLock)
             {
-                // Track length not available in rF2 shared memory - estimate from lap distance
-                if (_latestScoring == null) return 0f;
-                var player = GetPlayerVehicleScoring();
-                if (player == null) return 0f;
-
-                // LapDist gives normalized distance (0-1), not useful for absolute length
-                return 0f; // Not available
+                // ScoringInfo.LapDist is the full lap distance in meters
+                return _trackLengthMeters > 0 ? (float)(_trackLengthMeters / 1000.0) : 0f;
             }
         }
     }
@@ -345,6 +416,8 @@ public class rFactor2DataService : ILiveTelemetryService, IDisposable
             }
         }
     }
+
+    // --- Helper methods ---
 
     private VehicleScoring? GetPlayerVehicleScoring()
     {
@@ -369,12 +442,73 @@ public class rFactor2DataService : ILiveTelemetryService, IDisposable
 
     private static float CalculateSpeed(Vec3 localVelocity)
     {
-        // Calculate speed from velocity vector (magnitude)
         return (float)Math.Sqrt(
             localVelocity.X * localVelocity.X +
             localVelocity.Y * localVelocity.Y +
             localVelocity.Z * localVelocity.Z
         );
+    }
+
+    private static float CalculateWindSpeed(Vec3 wind)
+    {
+        return (float)Math.Sqrt(wind.X * wind.X + wind.Z * wind.Z);
+    }
+
+    private static float CalculateWindDirection(Vec3 wind)
+    {
+        // Wind direction in radians (from north, clockwise)
+        return (float)Math.Atan2(wind.X, wind.Z);
+    }
+
+    private static float CalculateYawNorth(Vec3[] orientation)
+    {
+        if (orientation == null || orientation.Length < 3)
+            return 0f;
+
+        // Forward vector is the third row of the orientation matrix
+        var forward = orientation[2];
+        // Yaw relative to north: atan2(forward.X, forward.Z)
+        return (float)Math.Atan2(forward.X, forward.Z);
+    }
+
+    private float CalculateDeltaToBest(VehicleScoring? playerScore)
+    {
+        if (playerScore == null) return 0f;
+
+        double bestLap = playerScore.Value.BestLapTime;
+        double timeIntoLap = playerScore.Value.TimeIntoLap;
+        double estimatedLap = playerScore.Value.EstimatedLapTime;
+
+        // If no best lap yet, delta is 0
+        if (bestLap <= 0 || estimatedLap <= 0) return 0f;
+
+        // Delta = estimated current lap time - best lap time
+        return (float)(estimatedLap - bestLap);
+    }
+
+    private int EstimateSkies()
+    {
+        // Estimate sky condition from DarkCloud (0.0-1.0) and Raining
+        if (_latestScoring == null) return 0;
+
+        double darkCloud = _latestScoring.Value.ScoringInfo.DarkCloud;
+        double raining = _latestScoring.Value.ScoringInfo.Raining;
+
+        if (raining > 0.1) return 3; // Overcast/stormy
+        if (darkCloud > 0.6) return 2; // Mostly cloudy
+        if (darkCloud > 0.3) return 1; // Partly cloudy
+        return 0; // Clear
+    }
+
+    private int EstimatePrecipitation()
+    {
+        if (_latestScoring == null) return 0;
+
+        double raining = _latestScoring.Value.ScoringInfo.Raining;
+
+        if (raining > 0.5) return 2; // Heavy rain
+        if (raining > 0.1) return 1; // Light rain
+        return 0; // No precipitation
     }
 
     private static string ByteArrayToString(byte[] bytes)

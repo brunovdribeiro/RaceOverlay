@@ -79,9 +79,20 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border Padding="12,6" Background="Transparent">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSupported}" Value="False">
+                                                    <Setter Property="Opacity" Value="0.4"/>
+                                                    <Setter Property="ToolTip" Value="Not supported by current game"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
                                     <DockPanel>
                                         <ToggleButton DockPanel.Dock="Right"
                                                       IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                                      IsEnabled="{Binding IsSupported}"
                                                       Style="{StaticResource ToggleSwitchStyle}"
                                                       VerticalAlignment="Center"/>
                                         <TextBlock Text="{Binding DisplayName}"

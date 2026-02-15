@@ -14,6 +14,9 @@ public partial class WidgetLibraryItem : ObservableObject
     [ObservableProperty]
     private bool isEnabled;
 
+    [ObservableProperty]
+    private bool isSupported = true;
+
     public WidgetLibraryItem(WidgetMetadata metadata, Action<WidgetLibraryItem, bool>? toggleCallback = null)
     {
         Metadata = metadata;

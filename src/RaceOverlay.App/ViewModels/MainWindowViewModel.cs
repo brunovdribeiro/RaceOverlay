@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RaceOverlay.App.Models;
 using RaceOverlay.App.Services;
+using RaceOverlay.Core.Services;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Engine.Factories;
 using RaceOverlay.Engine.Widgets;
@@ -18,6 +19,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<MainWindowViewModel> _logger;
     private readonly WidgetViewFactoryRegistry _factoryRegistry;
+    private readonly IGameDetectionService _gameDetectionService;
     private readonly ConfigurationPersistenceService _persistenceService = new();
     private readonly Dictionary<string, IWidget> _activeWidgets = new();
     private readonly Dictionary<string, WidgetHostPanel> _activeHostPanels = new();
@@ -245,12 +247,17 @@ public partial class MainWindowViewModel : ObservableObject
 
     public string SetupModeButtonText => IsSetupMode ? "Exit Setup Mode (Ctrl+F1)" : "Enter Setup Mode (Ctrl+F1)";
 
-    public MainWindowViewModel(IWidgetRegistry widgetRegistry, IServiceProvider serviceProvider, ILogger<MainWindowViewModel> logger, WidgetViewFactoryRegistry factoryRegistry)
+    public MainWindowViewModel(IWidgetRegistry widgetRegistry, IServiceProvider serviceProvider, ILogger<MainWindowViewModel> logger, WidgetViewFactoryRegistry factoryRegistry, IGameDetectionService gameDetectionService)
     {
         _widgetRegistry = widgetRegistry ?? throw new ArgumentNullException(nameof(widgetRegistry));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _factoryRegistry = factoryRegistry ?? throw new ArgumentNullException(nameof(factoryRegistry));
+        _gameDetectionService = gameDetectionService ?? throw new ArgumentNullException(nameof(gameDetectionService));
+
+        _gameDetectionService.GameDetected += (_, gameId) => UpdateWidgetSupport(gameId);
+        _gameDetectionService.GameDisconnected += (_, _) => UpdateWidgetSupport(null);
+        _gameDetectionService.DemoModeActivated += (_, _) => UpdateWidgetSupport(null);
 
         LoadWidgetLibrary();
     }
@@ -651,8 +658,23 @@ public partial class MainWindowViewModel : ObservableObject
         var registeredWidgets = _widgetRegistry.GetRegisteredWidgets();
         foreach (var widget in registeredWidgets)
         {
-            WidgetLibraryItems.Add(new WidgetLibraryItem(widget, OnWidgetToggled));
+            var item = new WidgetLibraryItem(widget, OnWidgetToggled)
+            {
+                IsSupported = widget.SupportsGame(_gameDetectionService.ActiveGameId)
+            };
+            WidgetLibraryItems.Add(item);
         }
+    }
+
+    private void UpdateWidgetSupport(string? gameId)
+    {
+        Application.Current?.Dispatcher?.Invoke(() =>
+        {
+            foreach (var item in WidgetLibraryItems)
+            {
+                item.IsSupported = item.Metadata.SupportsGame(gameId);
+            }
+        });
     }
 
     private async void OnWidgetToggled(WidgetLibraryItem item, bool isEnabled)
