@@ -18,6 +18,7 @@ using RaceOverlay.Providers.iRacing;
 using RaceOverlay.Providers.rFactor2;
 using Serilog;
 using Velopack;
+using Velopack.Sources;
 
 namespace RaceOverlay.App;
 
@@ -133,7 +134,7 @@ public partial class App : Application
     {
         try
         {
-            var mgr = new UpdateManager("https://github.com/Race-Overlay/RaceOverlay/releases");
+            var mgr = new UpdateManager(new GithubSource("https://github.com/brunovdribeiro/RaceOverlay", null, false));
             if (!mgr.IsInstalled)
             {
                 Log.Information("App is not installed via Velopack, skipping update check");
