@@ -1,6 +1,7 @@
 ﻿using RaceOverlay.Core.Services;
 using RaceOverlay.Core.Widgets;
 using RaceOverlay.Engine.Models;
+using RaceOverlay.Engine.Services;
 
 namespace RaceOverlay.Engine.Widgets;
 
@@ -14,6 +15,21 @@ public class RadarConfig : IRadarConfig
     public string OpponentColor { get; set; } = "#EF4444"; // Red
     public double OverlayLeft { get; set; } = double.NaN;
     public double OverlayTop { get; set; } = double.NaN;
+
+    // Proximity colors
+    public bool UseProximityColors { get; set; } = true;
+    public string ProximityFarColor { get; set; } = "#22C55E"; // Green
+    public string ProximityMidColor { get; set; } = "#F59E0B"; // Amber
+    public string ProximityCloseColor { get; set; } = "#EF4444"; // Red
+    public double ProximityCloseThreshold { get; set; } = 10.0;
+    public double ProximityMidThreshold { get; set; } = 20.0;
+
+    // Blind spot indicators
+    public bool ShowBlindSpotIndicators { get; set; } = true;
+
+    // Sound alerts
+    public bool EnableSoundAlerts { get; set; } = false;
+    public int AlertCooldownMs { get; set; } = 1500;
 }
 
 public class RadarWidget : IWidget
@@ -25,6 +41,9 @@ public class RadarWidget : IWidget
     private List<RadarCar> _cars = new();
     private readonly Random _random = new();
     private double _elapsed;
+    private readonly ProximityAlertService _alertService = new();
+    private bool _wasCarOnLeft;
+    private bool _wasCarOnRight;
 
     public event Action? DataUpdated;
 
@@ -47,6 +66,7 @@ public class RadarWidget : IWidget
         if (configuration is RadarConfig config)
         {
             _configuration = config;
+            _alertService.CooldownMs = config.AlertCooldownMs;
         }
     }
 
@@ -78,6 +98,8 @@ public class RadarWidget : IWidget
                     UpdateLiveRadar();
                 else
                     UpdateMockRadar();
+
+                ProcessBlindSpotAlerts();
 
                 DataUpdated?.Invoke();
                 _elapsed += _configuration.UpdateIntervalMs / 1000.0;
@@ -147,7 +169,7 @@ public class RadarWidget : IWidget
                     IsPlayer = false,
                     LongitudinalOffset = longOffset,
                     LateralOffset = latOffset,
-                    Color = _configuration.OpponentColor,
+                    Color = GetOpponentColor(latOffset, longOffset),
                     DriverName = info.UserName
                 });
             }
@@ -181,7 +203,7 @@ public class RadarWidget : IWidget
                 IsPlayer = false,
                 LongitudinalOffset = longOffset,
                 LateralOffset = latOffset,
-                Color = _configuration.OpponentColor,
+                Color = GetOpponentColor(latOffset, longOffset),
                 DriverName = $"Opponent {i + 1}"
             });
         }
@@ -190,4 +212,50 @@ public class RadarWidget : IWidget
     }
 
     public IReadOnlyList<RadarCar> GetCars() => _cars.AsReadOnly();
+
+    private string GetOpponentColor(double latOffset, double longOffset)
+    {
+        if (!_configuration.UseProximityColors)
+            return _configuration.OpponentColor;
+
+        double distance = Math.Sqrt(latOffset * latOffset + longOffset * longOffset);
+
+        if (distance <= _configuration.ProximityCloseThreshold)
+            return _configuration.ProximityCloseColor;
+        if (distance <= _configuration.ProximityMidThreshold)
+            return _configuration.ProximityMidColor;
+        return _configuration.ProximityFarColor;
+    }
+
+    private void ProcessBlindSpotAlerts()
+    {
+        if (!_configuration.EnableSoundAlerts)
+            return;
+
+        const double lateralThreshold = 1.0;
+        const double longitudinalThreshold = 8.0;
+
+        bool carOnLeft = false;
+        bool carOnRight = false;
+
+        foreach (var car in _cars)
+        {
+            if (car.IsPlayer) continue;
+            if (Math.Abs(car.LongitudinalOffset) > longitudinalThreshold) continue;
+
+            if (car.LateralOffset < -lateralThreshold)
+                carOnLeft = true;
+            if (car.LateralOffset > lateralThreshold)
+                carOnRight = true;
+        }
+
+        // Fire alerts on state transition only (wasn't in zone → now is)
+        if (carOnLeft && !_wasCarOnLeft)
+            _alertService.PlayLeftAlert();
+        if (carOnRight && !_wasCarOnRight)
+            _alertService.PlayRightAlert();
+
+        _wasCarOnLeft = carOnLeft;
+        _wasCarOnRight = carOnRight;
+    }
 }

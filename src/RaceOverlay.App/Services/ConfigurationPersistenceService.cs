@@ -86,6 +86,7 @@ public class ConfigurationPersistenceService
                 "lap-timer" => JsonSerializer.Deserialize<LapTimerConfig>(json),
                 "track-map" => JsonSerializer.Deserialize<TrackMapConfig>(json),
                 "weather" => JsonSerializer.Deserialize<WeatherConfig>(json),
+                "radar" => JsonSerializer.Deserialize<RadarConfig>(json),
                 _ => null
             };
         }

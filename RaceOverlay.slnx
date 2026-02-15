@@ -5,7 +5,9 @@
   <Folder Name="/docs/">
     <File Path="docs/ARCHITECTURE.md" />
     <File Path="docs/commercial-roadmap.md" />
+    <File Path="docs/Product Requirement Document.md" />
     <File Path="docs/racelabs-comparison.md" />
+    <File Path="docs/Technical Architecture – SaaS + Desktop Integration.md" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/RaceOverlay.App/RaceOverlay.App.csproj" />

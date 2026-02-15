@@ -581,6 +581,167 @@
                                     </StackPanel>
                                 </StackPanel>
 
+                                <!-- Radar Settings -->
+                                <StackPanel>
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedConfigWidgetId}" Value="radar">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
+
+                                    <TextBlock Text="GENERAL" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,0,0,8"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Range (meters)" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}">
+                                            <TextBox.Text>
+                                                <Binding Path="RadarRangeMeters" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:DoubleRangeValidationRule Min="5" Max="200"/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Update Interval (ms)" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}">
+                                            <TextBox.Text>
+                                                <Binding Path="RadarUpdateIntervalMs" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:IntRangeValidationRule Min="10" Max="10000"/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
+                                    </StackPanel>
+
+                                    <CheckBox Content="Use Mock Data" IsChecked="{Binding RadarUseMockData}" Style="{StaticResource SettingsCheckBox}"/>
+
+                                    <TextBlock Text="COLORS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+
+                                    <CheckBox Content="Use Proximity Colors" IsChecked="{Binding RadarUseProximityColors}" Style="{StaticResource SettingsCheckBox}"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Player" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}" Width="80">
+                                            <TextBox.Text>
+                                                <Binding Path="RadarPlayerColor" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:HexColorValidationRule/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
+                                    </StackPanel>
+
+                                    <!-- Opponent color (shown when proximity colors OFF) -->
+                                    <StackPanel Orientation="Horizontal" Visibility="{Binding RadarUseProximityColors, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                                        <TextBlock Text="Opponent" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}" Width="80">
+                                            <TextBox.Text>
+                                                <Binding Path="RadarOpponentColor" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:HexColorValidationRule/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
+                                    </StackPanel>
+
+                                    <!-- Proximity color settings (shown when proximity colors ON) -->
+                                    <StackPanel Visibility="{Binding RadarUseProximityColors, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Far Color" Style="{StaticResource SettingsLabel}"/>
+                                            <TextBox Style="{StaticResource SettingsTextBox}" Width="80">
+                                                <TextBox.Text>
+                                                    <Binding Path="RadarProximityFarColor" UpdateSourceTrigger="PropertyChanged">
+                                                        <Binding.ValidationRules>
+                                                            <validation:HexColorValidationRule/>
+                                                        </Binding.ValidationRules>
+                                                    </Binding>
+                                                </TextBox.Text>
+                                            </TextBox>
+                                        </StackPanel>
+
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Mid Color" Style="{StaticResource SettingsLabel}"/>
+                                            <TextBox Style="{StaticResource SettingsTextBox}" Width="80">
+                                                <TextBox.Text>
+                                                    <Binding Path="RadarProximityMidColor" UpdateSourceTrigger="PropertyChanged">
+                                                        <Binding.ValidationRules>
+                                                            <validation:HexColorValidationRule/>
+                                                        </Binding.ValidationRules>
+                                                    </Binding>
+                                                </TextBox.Text>
+                                            </TextBox>
+                                        </StackPanel>
+
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Close Color" Style="{StaticResource SettingsLabel}"/>
+                                            <TextBox Style="{StaticResource SettingsTextBox}" Width="80">
+                                                <TextBox.Text>
+                                                    <Binding Path="RadarProximityCloseColor" UpdateSourceTrigger="PropertyChanged">
+                                                        <Binding.ValidationRules>
+                                                            <validation:HexColorValidationRule/>
+                                                        </Binding.ValidationRules>
+                                                    </Binding>
+                                                </TextBox.Text>
+                                            </TextBox>
+                                        </StackPanel>
+
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Close Threshold (m)" Style="{StaticResource SettingsLabel}"/>
+                                            <TextBox Style="{StaticResource SettingsTextBox}">
+                                                <TextBox.Text>
+                                                    <Binding Path="RadarProximityCloseThreshold" UpdateSourceTrigger="PropertyChanged">
+                                                        <Binding.ValidationRules>
+                                                            <validation:DoubleRangeValidationRule Min="1" Max="100"/>
+                                                        </Binding.ValidationRules>
+                                                    </Binding>
+                                                </TextBox.Text>
+                                            </TextBox>
+                                        </StackPanel>
+
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Mid Threshold (m)" Style="{StaticResource SettingsLabel}"/>
+                                            <TextBox Style="{StaticResource SettingsTextBox}">
+                                                <TextBox.Text>
+                                                    <Binding Path="RadarProximityMidThreshold" UpdateSourceTrigger="PropertyChanged">
+                                                        <Binding.ValidationRules>
+                                                            <validation:DoubleRangeValidationRule Min="1" Max="200"/>
+                                                        </Binding.ValidationRules>
+                                                    </Binding>
+                                                </TextBox.Text>
+                                            </TextBox>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <TextBlock Text="ALERTS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
+
+                                    <CheckBox Content="Show Blind Spot Indicators" IsChecked="{Binding RadarShowBlindSpotIndicators}" Style="{StaticResource SettingsCheckBox}"/>
+                                    <CheckBox Content="Enable Sound Alerts" IsChecked="{Binding RadarEnableSoundAlerts}" Style="{StaticResource SettingsCheckBox}"/>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Alert Cooldown (ms)" Style="{StaticResource SettingsLabel}"/>
+                                        <TextBox Style="{StaticResource SettingsTextBox}">
+                                            <TextBox.Text>
+                                                <Binding Path="RadarAlertCooldownMs" UpdateSourceTrigger="PropertyChanged">
+                                                    <Binding.ValidationRules>
+                                                        <validation:IntRangeValidationRule Min="100" Max="10000"/>
+                                                    </Binding.ValidationRules>
+                                                </Binding>
+                                            </TextBox.Text>
+                                        </TextBox>
+                                    </StackPanel>
+                                </StackPanel>
+
                                 <!-- Position Section (shared) -->
                                 <TextBlock Text="POSITION" FontSize="11" FontWeight="Bold" Foreground="{StaticResource RO.MutedBrush}" Margin="0,16,0,8"/>
                                 <StackPanel Orientation="Horizontal">

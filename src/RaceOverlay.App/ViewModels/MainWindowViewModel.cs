@@ -216,6 +216,33 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private bool radarUseMockData = false;
 
+    [ObservableProperty]
+    private bool radarUseProximityColors = true;
+
+    [ObservableProperty]
+    private string radarProximityFarColor = "#22C55E";
+
+    [ObservableProperty]
+    private string radarProximityMidColor = "#F59E0B";
+
+    [ObservableProperty]
+    private string radarProximityCloseColor = "#EF4444";
+
+    [ObservableProperty]
+    private double radarProximityCloseThreshold = 10.0;
+
+    [ObservableProperty]
+    private double radarProximityMidThreshold = 20.0;
+
+    [ObservableProperty]
+    private bool radarShowBlindSpotIndicators = true;
+
+    [ObservableProperty]
+    private bool radarEnableSoundAlerts = false;
+
+    [ObservableProperty]
+    private int radarAlertCooldownMs = 1500;
+
     public string SetupModeButtonText => IsSetupMode ? "Exit Setup Mode (Ctrl+F1)" : "Enter Setup Mode (Ctrl+F1)";
 
     public MainWindowViewModel(IWidgetRegistry widgetRegistry, IServiceProvider serviceProvider, ILogger<MainWindowViewModel> logger, WidgetViewFactoryRegistry factoryRegistry)
@@ -393,6 +420,15 @@ public partial class MainWindowViewModel : ObservableObject
         RadarPlayerColor = config.PlayerColor;
         RadarOpponentColor = config.OpponentColor;
         RadarUseMockData = config.UseMockData;
+        RadarUseProximityColors = config.UseProximityColors;
+        RadarProximityFarColor = config.ProximityFarColor;
+        RadarProximityMidColor = config.ProximityMidColor;
+        RadarProximityCloseColor = config.ProximityCloseColor;
+        RadarProximityCloseThreshold = config.ProximityCloseThreshold;
+        RadarProximityMidThreshold = config.ProximityMidThreshold;
+        RadarShowBlindSpotIndicators = config.ShowBlindSpotIndicators;
+        RadarEnableSoundAlerts = config.EnableSoundAlerts;
+        RadarAlertCooldownMs = config.AlertCooldownMs;
         UpdatePositionText(config.OverlayLeft, config.OverlayTop);
     }
 
@@ -454,6 +490,15 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnRadarPlayerColorChanged(string value) => PushRadarConfigToActiveWidgets();
     partial void OnRadarOpponentColorChanged(string value) => PushRadarConfigToActiveWidgets();
     partial void OnRadarUseMockDataChanged(bool value) => PushRadarConfigToActiveWidgets();
+    partial void OnRadarUseProximityColorsChanged(bool value) => PushRadarConfigToActiveWidgets();
+    partial void OnRadarProximityFarColorChanged(string value) => PushRadarConfigToActiveWidgets();
+    partial void OnRadarProximityMidColorChanged(string value) => PushRadarConfigToActiveWidgets();
+    partial void OnRadarProximityCloseColorChanged(string value) => PushRadarConfigToActiveWidgets();
+    partial void OnRadarProximityCloseThresholdChanged(double value) => PushRadarConfigToActiveWidgets();
+    partial void OnRadarProximityMidThresholdChanged(double value) => PushRadarConfigToActiveWidgets();
+    partial void OnRadarShowBlindSpotIndicatorsChanged(bool value) => PushRadarConfigToActiveWidgets();
+    partial void OnRadarEnableSoundAlertsChanged(bool value) => PushRadarConfigToActiveWidgets();
+    partial void OnRadarAlertCooldownMsChanged(int value) => PushRadarConfigToActiveWidgets();
 
     private void PushConfigToActiveWidgets(string widgetId, IWidgetConfiguration config)
     {
@@ -564,6 +609,15 @@ public partial class MainWindowViewModel : ObservableObject
         PlayerColor = RadarPlayerColor,
         OpponentColor = RadarOpponentColor,
         UseMockData = RadarUseMockData,
+        UseProximityColors = RadarUseProximityColors,
+        ProximityFarColor = RadarProximityFarColor,
+        ProximityMidColor = RadarProximityMidColor,
+        ProximityCloseColor = RadarProximityCloseColor,
+        ProximityCloseThreshold = RadarProximityCloseThreshold,
+        ProximityMidThreshold = RadarProximityMidThreshold,
+        ShowBlindSpotIndicators = RadarShowBlindSpotIndicators,
+        EnableSoundAlerts = RadarEnableSoundAlerts,
+        AlertCooldownMs = RadarAlertCooldownMs,
     });
 
     public void SaveWidgetPosition(string? widgetId, double left, double top)

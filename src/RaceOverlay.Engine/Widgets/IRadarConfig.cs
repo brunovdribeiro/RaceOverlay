@@ -12,4 +12,19 @@ public interface IRadarConfig : IWidgetConfiguration
     bool UseMockData { get; set; }
     string PlayerColor { get; set; }
     string OpponentColor { get; set; }
+
+    // Proximity colors
+    bool UseProximityColors { get; set; }
+    string ProximityFarColor { get; set; }
+    string ProximityMidColor { get; set; }
+    string ProximityCloseColor { get; set; }
+    double ProximityCloseThreshold { get; set; }
+    double ProximityMidThreshold { get; set; }
+
+    // Blind spot indicators
+    bool ShowBlindSpotIndicators { get; set; }
+
+    // Sound alerts
+    bool EnableSoundAlerts { get; set; }
+    int AlertCooldownMs { get; set; }
 }

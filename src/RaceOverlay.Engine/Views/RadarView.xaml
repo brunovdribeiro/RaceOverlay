@@ -12,6 +12,7 @@
         <conv:StringToSolidColorBrushConverter x:Key="ColorConv"/>
         <conv:RadarXConverter x:Key="RadarXConverter"/>
         <conv:RadarYConverter x:Key="RadarYConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
     </UserControl.Resources>
 
     <Border BorderBrush="{StaticResource RO.BorderBrush}" BorderThickness="1" Background="{StaticResource RO.BackgroundBrush}" CornerRadius="8">
@@ -72,6 +73,22 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+
+            <!-- Blind Spot Indicators -->
+            <StackPanel Visibility="{Binding ShowBlindSpotIndicators, Converter={StaticResource BoolToVis}}" IsHitTestVisible="False">
+                <!-- Left indicator -->
+                <Border HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="6" CornerRadius="3,0,0,3"
+                        Background="{Binding LeftIndicatorColor, Converter={StaticResource ColorConv}}"
+                        Visibility="{Binding CarOnLeft, Converter={StaticResource BoolToVis}}"
+                        Opacity="0.85" Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Grid}}"/>
+            </StackPanel>
+            <StackPanel Visibility="{Binding ShowBlindSpotIndicators, Converter={StaticResource BoolToVis}}" IsHitTestVisible="False">
+                <!-- Right indicator -->
+                <Border HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="6" CornerRadius="0,3,3,0"
+                        Background="{Binding RightIndicatorColor, Converter={StaticResource ColorConv}}"
+                        Visibility="{Binding CarOnRight, Converter={StaticResource BoolToVis}}"
+                        Opacity="0.85" Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Grid}}"/>
+            </StackPanel>
         </Grid>
     </Border>
 </UserControl>
